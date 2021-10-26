@@ -2,7 +2,7 @@
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ fetch }) => {
-    const url = `/maps.json`;
+    const url = '/maps.json';
     const res: Response = await fetch(url);
 
     if (res.ok) {
@@ -25,6 +25,7 @@
   let image: string;
   let fileinput: HTMLInputElement;
   let loading = false;
+  let error: string;
 
   function getCurrentPosition(): void {
     if ('geolocation' in navigator) {
@@ -38,19 +39,31 @@
     file = event.currentTarget.files[0];
     let reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = async (event: ProgressEvent<FileReader>) => {
+    reader.onload = (event: ProgressEvent<FileReader>) => {
       image = event.target.result as string;
       uploadImage();
     };
   }
 
+  /**
+   * Upload image to presigned S3 url, create image from tileset, poll status and add image layer when tileset is created.
+   */
   async function uploadImage() {
     loading = true;
+    error = null;
 
     await fetch(signedUrl, { body: file, method: 'PUT' });
 
-    const mapsResponse = await fetch('/maps.json', { body: JSON.stringify({ fileUrl, name: file.name }), method: 'POST' });
-    const { id } = await mapsResponse.json();
+    const response = await fetch('/maps.json', { body: JSON.stringify({ fileUrl, name: file.name }), method: 'POST' });
+    const { message, id } = await response.json();
+
+    if (!response.ok) {
+      loading = false;
+      error = message;
+
+      return;
+    }
+
     const { tileset } = await getUploadResultWhenDone(id);
 
     map.addImageLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: 'image-layer', type: 'raster', source: tileset });
@@ -59,18 +72,18 @@
     loading = false;
   }
 
-  async function getUploadResultWhenDone(uploadId: string) {
-    const uploadStatusResponse = await fetch('/uploads.json', { method: 'POST', body: JSON.stringify({ uploadId }) });
-    const uploadStatusResult = await uploadStatusResponse.json();
+  async function getUploadResultWhenDone(id: string) {
+    const response = await fetch(`/maps/status/${id}.json`);
+    const result = await response.json();
 
-    if (uploadStatusResult.complete) {
-      return uploadStatusResult;
+    if (result.complete) {
+      return result;
     }
 
-    // wait for 2 seconds before refetching status
+    // wait for 2 seconds before querying status
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    return await getUploadResultWhenDone(uploadId);
+    return await getUploadResultWhenDone(id);
   }
 </script>
 
@@ -78,26 +91,23 @@
   <title>Sveltekit Maps</title>
 </svelte:head>
 
-<div class="flex p-4 gap-4">
+<div class="flex gap-4 p-4">
   <div>
     <h1 class="text-4xl">Sveltekit Maps</h1>
     <button class="p-1 bg-gray-300 border rounded-md" on:click={getCurrentPosition}>Get Current Position</button>
   </div>
 
-  <div>
-    <div class="flex flex-col justify-center items-center border w-max">
-      <h1 class="text-center">Upload Image</h1>
-
-      {#if image}
-        <img class="avatar" width="150" height="150" src={image} alt="d" />
-      {:else}
-        <img class="avatar" width="150" height="150" src="https://cdn4.iconfinder.com/data/icons/small-n-flat/24/user-alt-512.png" alt="" />
-      {/if}
-      <button class="p-1 bg-gray-300 border rounded-md" on:click={() => fileinput.click()}>Upload Image</button>
-      <input class="hidden" type="file" accept=".jpg, .jpeg, .png, .tiff" on:change={e => onFileSelected(e)} bind:this={fileinput} />
+  <div on:click={() => fileinput.click()}>
+    <div class="flex flex-col items-center justify-center border cursor-pointer w-max">
+      <img class="avatar" width="150" height="150" src={image ? image : 'https://i.stack.imgur.com/y9DpT.jpg'} alt="" />
+      <button type="button" class="p-1 bg-gray-300 border rounded-md">Upload Geotiff</button>
+      <input class="hidden" type="file" accept=".tiff" on:change={e => onFileSelected(e)} bind:this={fileinput} />
 
       {#if loading}
         <p>loading...</p>
+      {/if}
+      {#if error}
+        <p>error processing image: {error}</p>
       {/if}
     </div>
   </div>
