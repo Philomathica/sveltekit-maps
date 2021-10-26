@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext } from 'svelte';
-  import { mapbox, key, MapboxContext } from '../scripts/mapbox';
+  import { mapbox, key, MapboxContext } from './mapbox';
 
   const { getMap } = getContext<MapboxContext>(key);
   const map = getMap();

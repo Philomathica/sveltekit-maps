@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, setContext } from 'svelte';
-  import { mapbox, key, MapboxContext } from '../scripts/mapbox';
+  import { mapbox, key, MapboxContext } from './mapbox';
 
   setContext<MapboxContext>(key, {
     getMap: () => map,
@@ -35,10 +35,17 @@
     };
   });
 
-  export function goToLocation(lngLat: mapbox.LngLatLike): void {
+  export function goToLocation(lngLat: mapbox.LngLatLike, addMarker = false, zoom = 20): void {
     const popup = new mapbox.Popup({ offset: 25 }).setText('hi');
-    new mapbox.Marker().setLngLat(lngLat).setPopup(popup).addTo(map);
-    map.flyTo({ center: lngLat, zoom: 20 });
+    if (addMarker) {
+      new mapbox.Marker().setLngLat(lngLat).setPopup(popup).addTo(map);
+    }
+    map.flyTo({ center: lngLat, zoom });
+  }
+
+  export function addImageLayer(sourceId: string, source: mapbox.AnySourceData, layer: mapbox.AnyLayer): void {
+    map.addSource(sourceId, source);
+    map.addLayer(layer);
   }
 </script>
 
