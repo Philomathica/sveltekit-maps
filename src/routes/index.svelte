@@ -21,9 +21,12 @@
   export let fileUrl: string;
 
   let map: Map;
-  let file: File;
-  let image: string;
-  let fileinput: HTMLInputElement;
+  let geotiffFile: File;
+  let imageFile: File;
+  let geotiffDataUrl: string;
+  let imageDataUrl: string;
+  let fileinputGeotiff: HTMLInputElement;
+  let fileinputImage: HTMLInputElement;
   let loading = false;
   let error: string;
 
@@ -35,12 +38,22 @@
     }
   }
 
-  function onFileSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
-    file = event.currentTarget.files[0];
+  function onGeotiffSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+    geotiffFile = event.currentTarget.files[0];
     let reader = new FileReader();
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(geotiffFile);
     reader.onload = (event: ProgressEvent<FileReader>) => {
-      image = event.target.result as string;
+      geotiffDataUrl = event.target.result as string;
+      uploadGeotiff();
+    };
+  }
+
+  function onImageSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+    imageFile = event.currentTarget.files[0];
+    let reader = new FileReader();
+    reader.readAsDataURL(imageFile);
+    reader.onload = (event: ProgressEvent<FileReader>) => {
+      imageDataUrl = event.target.result as string;
       uploadImage();
     };
   }
@@ -48,13 +61,13 @@
   /**
    * Upload image to presigned S3 url, create image from tileset, poll status and add image layer when tileset is created.
    */
-  async function uploadImage() {
+  async function uploadGeotiff() {
     loading = true;
     error = null;
 
-    await fetch(signedUrl, { body: file, method: 'PUT' });
+    await fetch(signedUrl, { body: geotiffFile, method: 'PUT' });
 
-    const response = await fetch('/maps.json', { body: JSON.stringify({ fileUrl, name: file.name }), method: 'POST' });
+    const response = await fetch('/maps.json', { body: JSON.stringify({ fileUrl, name: geotiffFile.name }), method: 'POST' });
     const { message, id } = await response.json();
 
     if (!response.ok) {
@@ -66,7 +79,7 @@
 
     const { tileset } = await getUploadResultWhenDone(id);
 
-    map.addImageLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: 'image-layer', type: 'raster', source: tileset });
+    map.addLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: 'image-layer', type: 'raster', source: tileset });
     map.goToLocation([-85.595, 44.777], false, 10.25);
 
     loading = false;
@@ -85,6 +98,23 @@
 
     return await getUploadResultWhenDone(id);
   }
+
+  function uploadImage() {
+    map.addLayer(
+      'image',
+      {
+        type: 'image',
+        url: imageDataUrl,
+        coordinates: [
+          [-80.425, 46.437],
+          [-71.516, 46.437],
+          [-71.516, 37.936],
+          [-80.425, 37.936],
+        ],
+      },
+      { id: 'image-layer', type: 'raster', source: 'image' },
+    );
+  }
 </script>
 
 <svelte:head>
@@ -97,11 +127,11 @@
     <button class="p-1 bg-gray-300 border rounded-md" on:click={getCurrentPosition}>Get Current Position</button>
   </div>
 
-  <div on:click={() => fileinput.click()}>
+  <div on:click={() => fileinputGeotiff.click()}>
     <div class="flex flex-col items-center justify-center border cursor-pointer w-max">
-      <img class="avatar" width="150" height="150" src={image ? image : 'https://i.stack.imgur.com/y9DpT.jpg'} alt="" />
+      <img class="avatar" width="150" height="150" src={geotiffDataUrl ? geotiffDataUrl : 'https://i.stack.imgur.com/y9DpT.jpg'} alt="" />
       <button type="button" class="p-1 bg-gray-300 border rounded-md">Upload Geotiff</button>
-      <input class="hidden" type="file" accept=".tiff" on:change={e => onFileSelected(e)} bind:this={fileinput} />
+      <input class="hidden" type="file" accept=".tiff" on:change={e => onGeotiffSelected(e)} bind:this={fileinputGeotiff} />
 
       {#if loading}
         <p>loading...</p>
@@ -109,6 +139,13 @@
       {#if error}
         <p>error processing image: {error}</p>
       {/if}
+    </div>
+  </div>
+
+  <div on:click={() => fileinputImage.click()}>
+    <div class="flex flex-col items-center justify-center border cursor-pointer w-max">
+      <button type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
+      <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={fileinputImage} />
     </div>
   </div>
 </div>

@@ -43,7 +43,7 @@
     map.flyTo({ center: lngLat, zoom });
   }
 
-  export function addImageLayer(sourceId: string, source: mapbox.AnySourceData, layer: mapbox.AnyLayer): void {
+  export function addLayer(sourceId: string, source: mapbox.AnySourceData, layer: mapbox.AnyLayer): void {
     map.addSource(sourceId, source);
     map.addLayer(layer);
   }

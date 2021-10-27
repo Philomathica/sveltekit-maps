@@ -2,7 +2,7 @@ import { mapbox } from '$lib/variables';
 import type { RequestHandler } from '@sveltejs/kit';
 
 /**
- * Get upload status
+ * Get upload status from mapbox geotiff to tileset conversion
  */
 export const get: RequestHandler = async ({ params }) => {
   const url = `${mapbox.baseUrl}/${params.id}?access_token=${mapbox.uploadToken}`;
