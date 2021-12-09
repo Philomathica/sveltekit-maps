@@ -14,82 +14,91 @@
 </script>
 
 <script lang="ts">
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+
   import Map from '$lib/maps/Map.svelte';
   import MapMarker from '$lib/maps/MapMarker.svelte';
+  import { onMount } from 'svelte';
 
   export let signedUrl: string;
   export let fileUrl: string;
 
+  let loam: any;
   let map: Map;
-  let geotiffFile: File;
-  let imageFile: File;
-  let geotiffDataUrl: string;
-  let imageDataUrl: string;
-  let fileinputGeotiff: HTMLInputElement;
-  let fileinputImage: HTMLInputElement;
-  let loading = false;
+  let fileInput: HTMLInputElement;
+  let imageInput: HTMLInputElement;
+  let geotiffInput: HTMLInputElement;
+  let loadingMessage = '';
+  let leftCornerX = '-75.3';
+  let leftCornerY = '5.5';
+  let rightCornerX = '-73.5';
+  let rightCornerY = '3.7';
   let error: string;
 
-  function getCurrentPosition(): void {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(position => {
-        map.goToLocation([position.coords.longitude, position.coords.latitude], true);
-      });
-    }
+  let geoData = { width: 0, height: 0, count: 0, wkt: '', geoTransform: [0, 0, 0, 0, 0, 0], coordinaties: '' };
+
+  const EPSG4326 =
+    'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]';
+
+  onMount(async () => {
+    loam = await import('loam');
+    loam.initialize(window.location.origin);
+  });
+
+  function getCustomImageTileset(tileset: string): void {
+    map.addLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: 'image-layer', type: 'raster', source: tileset });
+    map.goToLocation([-74.4, 4.601], false, 7.12);
   }
 
-  function onGeotiffSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
-    geotiffFile = event.currentTarget.files[0];
-    let reader = new FileReader();
-    reader.readAsDataURL(geotiffFile);
-    reader.onload = (event: ProgressEvent<FileReader>) => {
-      geotiffDataUrl = event.target.result as string;
-      uploadGeotiff();
-    };
-  }
+  async function onConvertToGeotiffSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+    loadingMessage = 'Converting to GeoTIFF...';
+    const file = await loam.open(event.currentTarget.files[0]);
+    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', '-a_ullr', leftCornerX, leftCornerY, rightCornerX, rightCornerY]);
 
-  function onImageSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
-    imageFile = event.currentTarget.files[0];
-    let reader = new FileReader();
-    reader.readAsDataURL(imageFile);
-    reader.onload = (event: ProgressEvent<FileReader>) => {
-      imageDataUrl = event.target.result as string;
-      uploadImage();
-    };
+    const fileBytes: Uint16Array = await dataset.bytes();
+    const filename = dataset.source.src.name.split('.')[0] + '.tiff';
+    const geotiffFile = new File([fileBytes], filename, { type: 'image/tiff' });
+    await Promise.all([writeToGeoTiffObject(dataset), uploadGeotiff(geotiffFile)]);
   }
 
   /**
    * Upload image to presigned S3 url, create image from tileset, poll status and add image layer when tileset is created.
    */
-  async function uploadGeotiff() {
-    loading = true;
+  async function uploadGeotiff(geotiffFile: File) {
+    loadingMessage = 'uploading to S3...';
     error = null;
 
     await fetch(signedUrl, { body: geotiffFile, method: 'PUT' });
 
+    loadingMessage = 'converting geotiff to tileset...';
     const response = await fetch('/maps.json', { body: JSON.stringify({ fileUrl, name: geotiffFile.name }), method: 'POST' });
     const { message, id } = await response.json();
 
     if (!response.ok) {
-      loading = false;
       error = message;
+      loadingMessage = null;
 
       return;
     }
 
-    const { tileset } = await getUploadResultWhenDone(id);
+    const uploadResult = await getUploadResultWhenDone(id);
 
-    map.addLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: 'image-layer', type: 'raster', source: tileset });
-    map.goToLocation([-85.595, 44.777], false, 10.25);
+    if (uploadResult.error) {
+      error = uploadResult.error;
+      loadingMessage = null;
 
-    loading = false;
+      return;
+    }
+
+    loadingMessage = 'done converting';
+    getCustomImageTileset(uploadResult.tileset);
   }
 
   async function getUploadResultWhenDone(id: string) {
     const response = await fetch(`/maps/status/${id}.json`);
     const result = await response.json();
 
-    if (result.complete) {
+    if (result.complete || result.error) {
       return result;
     }
 
@@ -99,9 +108,70 @@
     return await getUploadResultWhenDone(id);
   }
 
-  function uploadImage() {
+  async function writeToGeoTiffObject(dataset: any) {
+    const [width, height, count, wkt, geoTransform] = await Promise.all([
+      dataset.width(),
+      dataset.height(),
+      dataset.count(),
+      dataset.wkt(),
+      dataset.transform(),
+    ]);
+    geoData.width = width;
+    geoData.height = height;
+    geoData.count = count;
+    geoData.wkt = wkt;
+
+    const cornersPx = [
+      [0, 0],
+      [width, 0],
+      [width, height],
+      [0, height],
+    ];
+
+    // https://gdal.org/user/raster_data_model.html#affine-geotransform
+    const cornersGeo = cornersPx.map(([x, y]) => {
+      return [geoTransform[0] + geoTransform[1] * x + geoTransform[2] * y, geoTransform[3] + geoTransform[4] * x + geoTransform[5] * y];
+    });
+
+    const cornersLngLat = await loam.reproject(wkt, EPSG4326, cornersGeo);
+    cornersLngLat.forEach(([lng, lat], i: number) => {
+      geoData.coordinaties +=
+        '(' + cornersGeo[i][0].toString() + ', ' + cornersGeo[i][1].toString() + ') (' + lng.toString() + ', ' + lat.toString() + ')\n';
+    });
+  }
+
+  function onImageSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+    const imageFile = event.currentTarget.files[0];
+    let reader = new FileReader();
+    reader.readAsDataURL(imageFile);
+    reader.onload = (event: ProgressEvent<FileReader>) => {
+      const imageDataUrl = event.target.result as string;
+      addImageLayer('image', imageDataUrl);
+    };
+  }
+
+  function onGeotiffSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+    const imageFile = event.currentTarget.files[0];
+    let reader = new FileReader();
+    reader.readAsArrayBuffer(imageFile);
+    reader.onload = async (event: ProgressEvent<FileReader>) => {
+      const imageArrayBuffer = event.target.result as ArrayBuffer;
+      const file = await loam.open(new Blob([imageArrayBuffer], { type: 'image/tiff' }));
+      const dataset = await file.convert(['-of', 'JPEG', '-scale']);
+      const fileBytes: Uint16Array = await dataset.bytes();
+      const blob = new Blob([fileBytes], { type: 'image/jpeg' });
+      const reader = new FileReader();
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        const file = event.target.result as string;
+        addImageLayer('geotiff-to-image', file);
+      };
+      reader.readAsDataURL(blob);
+    };
+  }
+
+  function addImageLayer(id: string, imageDataUrl: string) {
     map.addLayer(
-      'image',
+      id,
       {
         type: 'image',
         url: imageDataUrl,
@@ -112,7 +182,7 @@
           [-80.425, 37.936],
         ],
       },
-      { id: 'image-layer', type: 'raster', source: 'image' },
+      { id: id, type: 'raster', source: id },
     );
   }
 </script>
@@ -124,30 +194,44 @@
 <div class="flex gap-4 p-4">
   <div>
     <h1 class="text-4xl">Sveltekit Maps</h1>
-    <button class="p-1 bg-gray-300 border rounded-md" on:click={getCurrentPosition}>Get Current Position</button>
+    <button class="p-1 bg-gray-300 border rounded-md" on:click={() => getCustomImageTileset('luukmoret.mytileset')}>Get existing tileset</button>
+    <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
+    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={imageInput} />
+    <button on:click={() => geotiffInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Geotiff</button>
+    <input class="hidden" type="file" accept=".tif, .tiff" on:change={e => onGeotiffSelected(e)} bind:this={geotiffInput} />
   </div>
 
-  <div on:click={() => fileinputGeotiff.click()}>
-    <div class="flex flex-col items-center justify-center border cursor-pointer w-max">
-      <img class="avatar" width="150" height="150" src={geotiffDataUrl ? geotiffDataUrl : 'https://i.stack.imgur.com/y9DpT.jpg'} alt="" />
-      <button type="button" class="p-1 bg-gray-300 border rounded-md">Upload Geotiff</button>
-      <input class="hidden" type="file" accept=".tiff" on:change={e => onGeotiffSelected(e)} bind:this={fileinputGeotiff} />
-
-      {#if loading}
-        <p>loading...</p>
-      {/if}
-      {#if error}
-        <p>error processing image: {error}</p>
-      {/if}
-    </div>
+  <div class="flex flex-col items-center justify-center p-1 border cursor-pointer w-max">
+    <button on:click={() => fileInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Convert image to Geotiff</button>
+    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onConvertToGeotiffSelected(e)} bind:this={fileInput} />
+    <label>
+      image leftCornerX
+      <input type="text" class="p-1 border mt-1" bind:value={leftCornerX} />
+    </label>
+    <label>
+      image leftCornerY
+      <input type="text" class="p-1 border mt-1" bind:value={leftCornerY} />
+    </label>
+    <label>
+      image rightCornerX
+      <input type="text" class="p-1 border mt-1" bind:value={rightCornerX} />
+    </label>
+    <label>
+      image rightCornerY
+      <input type="text" class="p-1 border mt-1" bind:value={rightCornerY} />
+    </label>
   </div>
 
-  <div on:click={() => fileinputImage.click()}>
-    <div class="flex flex-col items-center justify-center border cursor-pointer w-max">
-      <button type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
-      <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={fileinputImage} />
-    </div>
-  </div>
+  {#if loadingMessage}
+    <p>{loadingMessage}</p>
+  {/if}
+  {#if error}
+    <p>error processing image: {error}</p>
+  {/if}
+
+  <pre>
+    width: {geoData.width}<br/>height: {geoData.height}<br/>band count: {geoData.count}<br/>coordinate system: {geoData.wkt}<br/>corner coordinates: <br/>{geoData.coordinaties}
+  </pre>
 </div>
 
 <Map lat={35} lon={-84} zoom={3.5} bind:this={map}>
