@@ -29,10 +29,10 @@
   let imageInput: HTMLInputElement;
   let geotiffInput: HTMLInputElement;
   let loadingMessage = '';
-  let leftCornerX = '-75.3';
-  let leftCornerY = '5.5';
-  let rightCornerX = '-73.5';
-  let rightCornerY = '3.7';
+  let upperLeftX = '-75.3';
+  let upperLeftY = '5.5';
+  let upperRightX = '-73.5';
+  let upperRightY = '3.7';
   let error: string;
 
   let geoData = { width: 0, height: 0, count: 0, wkt: '', geoTransform: [0, 0, 0, 0, 0, 0], coordinaties: '' };
@@ -46,14 +46,14 @@
   });
 
   function getCustomImageTileset(tileset: string): void {
-    map.addLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: 'image-layer', type: 'raster', source: tileset });
+    map.addLayer(tileset, { type: 'raster', url: `mapbox://${tileset}?fresh=true}` }, { id: 'image-layer', type: 'raster', source: tileset });
     map.goToLocation([-74.4, 4.601], false, 7.12);
   }
 
   async function onConvertToGeotiffSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     loadingMessage = 'Converting to GeoTIFF...';
     const file = await loam.open(event.currentTarget.files[0]);
-    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', '-a_ullr', leftCornerX, leftCornerY, rightCornerX, rightCornerY]);
+    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', '-a_ullr', upperLeftX, upperLeftY, upperRightX, upperRightY]);
 
     const fileBytes: Uint16Array = await dataset.bytes();
     const filename = dataset.source.src.name.split('.')[0] + '.tiff';
@@ -174,7 +174,7 @@
       id,
       {
         type: 'image',
-        url: imageDataUrl,
+        url: `${imageDataUrl}?dt=${Date.now()}`,
         coordinates: [
           [-80.425, 46.437],
           [-71.516, 46.437],
@@ -188,16 +188,17 @@
 </script>
 
 <svelte:head>
-  <title>Sveltekit Maps</title>
+  <title>Maps</title>
 </svelte:head>
 
 <div class="flex gap-4 p-4">
   <div>
-    <h1 class="text-4xl">Sveltekit Maps</h1>
-    <button class="p-1 bg-gray-300 border rounded-md" on:click={() => getCustomImageTileset('luukmoret.mytileset')}>Get existing tileset</button>
-    <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
-    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={imageInput} />
-    <button on:click={() => geotiffInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Geotiff</button>
+    <h1 class="text-4xl">Maps</h1>
+    <input />
+    <!-- <button class="p-1 bg-gray-300 border rounded-md" on:click={() => getCustomImageTileset('luukmoret.tileset')}>Get existing tileset</button> -->
+    <!-- <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button> -->
+    <!-- <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={imageInput} /> -->
+    <!-- <button on:click={() => geotiffInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Geotiff</button> -->
     <input class="hidden" type="file" accept=".tif, .tiff" on:change={e => onGeotiffSelected(e)} bind:this={geotiffInput} />
   </div>
 
@@ -205,20 +206,20 @@
     <button on:click={() => fileInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Convert image to Geotiff</button>
     <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onConvertToGeotiffSelected(e)} bind:this={fileInput} />
     <label>
-      image leftCornerX
-      <input type="text" class="p-1 border mt-1" bind:value={leftCornerX} />
+      image upperLeftX
+      <input type="text" class="p-1 border mt-1" bind:value={upperLeftX} />
     </label>
     <label>
-      image leftCornerY
-      <input type="text" class="p-1 border mt-1" bind:value={leftCornerY} />
+      image upperLeftY
+      <input type="text" class="p-1 border mt-1" bind:value={upperLeftY} />
     </label>
     <label>
-      image rightCornerX
-      <input type="text" class="p-1 border mt-1" bind:value={rightCornerX} />
+      image lowerRightX
+      <input type="text" class="p-1 border mt-1" bind:value={upperRightX} />
     </label>
     <label>
-      image rightCornerY
-      <input type="text" class="p-1 border mt-1" bind:value={rightCornerY} />
+      image lowerRightY
+      <input type="text" class="p-1 border mt-1" bind:value={upperRightY} />
     </label>
   </div>
 
@@ -235,10 +236,9 @@
 </div>
 
 <Map lat={35} lon={-84} zoom={3.5} bind:this={map}>
-  <MapMarker lat={37.8225} lon={-122.0024} label="Svelte Body Shaping" />
-  <MapMarker lat={33.8981} lon={-118.4169} label="Svelte Barbershop & Essentials" />
+  <!-- <MapMarker lat={37.8225} lon={-122.0024} label="Svelte Body Shaping" />
   <MapMarker lat={29.723} lon={-95.4189} label="Svelte Waxing Studio" />
   <MapMarker lat={28.3378} lon={-81.3966} label="Svelte 30 Nutritional Consultants" />
   <MapMarker lat={40.6483} lon={-74.0237} label="Svelte Brands LLC" />
-  <MapMarker lat={40.6986} lon={-74.41} label="Svelte Medical Systems" />
+  <MapMarker lat={40.6986} lon={-74.41} label="Svelte Medical Systems" /> -->
 </Map>

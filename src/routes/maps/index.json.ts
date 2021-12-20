@@ -3,12 +3,14 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { mapbox } from '$lib/variables';
 
 import type { RequestHandler } from '@sveltejs/kit';
+import { customAlphabet } from 'nanoid';
+import * as nanoidDictionary from 'nanoid-dictionary';
 
 /**
  * Get the mapbox s3 bucket to upload image and signed url so the client can upload image directly.
  */
 export const get: RequestHandler = async () => {
-  const url = `${mapbox.baseUrl}/credentials?access_token=${mapbox.uploadToken}`;
+  const url = `${mapbox.baseUploadUrl}/credentials?access_token=${mapbox.uploadToken}`;
   const response = await fetch(url, { method: 'POST' });
   const { accessKeyId, secretAccessKey, sessionToken, bucket: Bucket, key: Key, url: fileUrl } = await response.json();
   const command = new PutObjectCommand({ Bucket, Key });
@@ -22,9 +24,11 @@ export const get: RequestHandler = async () => {
  * Convert client uploaded s3 image to mapbox tileset.
  */
 export const post: RequestHandler<Record<string, unknown>, string> = async ({ body }) => {
+  const nanoid = customAlphabet(nanoidDictionary.alphanumeric, 6);
+  const tileset = `${mapbox.username}.${nanoid()}`;
   const { fileUrl, name } = JSON.parse(body);
-  const url = `${mapbox.baseUrl}?access_token=${mapbox.uploadToken}`;
-  const payload = JSON.stringify({ url: fileUrl, tileset: 'luukmoret.mytileset', name });
+  const url = `${mapbox.baseUploadUrl}?access_token=${mapbox.uploadToken}`;
+  const payload = JSON.stringify({ url: fileUrl, tileset, name });
   const response = await fetch(url, { body: payload, method: 'POST', headers: { 'Content-Type': 'application/json' } });
   const result = await response.json();
 
