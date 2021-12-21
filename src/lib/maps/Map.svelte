@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { ImageSource } from 'mapbox-gl';
+  import type { ImageSource, PointLike } from 'mapbox-gl';
 
-  import { onMount, setContext } from 'svelte';
+  import { onMount, setContext, createEventDispatcher } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
+  import { projectPointForGeoreference } from './georeference';
 
   setContext<MapboxContext>(key, {
     getMap: () => map,
@@ -12,8 +13,14 @@
   export let lon: number;
   export let zoom: number;
 
+  export let upperLeftX: string;
+  export let upperLeftY: string;
+  export let lowerRightX: string;
+  export let lowerRightY: string;
+
   let container: HTMLElement;
   let map: mapbox.Map;
+  const dispatch = createEventDispatcher();
 
   onMount(() => {
     const link = document.createElement('link');
@@ -50,40 +57,103 @@
     map.addLayer(layer);
   }
 
-  export function dragImage(sourceId: string, layerId: string) {
+  export function dragImage(sourceId: string, layerId: string, width: number, height: number) {
+    const bbox = [0, 0, width, height];
+
+    const markerElTopL = document.createElement('div');
+    markerElTopL.style.cssText = 'width: 40px; height: 40px; background: #f00';
+
+    const markerTopLeft = new mapbox.Marker({
+      element: markerElTopL,
+      draggable: true,
+      anchor: 'bottom',
+      offset: [-20, 0] as PointLike,
+    })
+      .setLngLat(new mapbox.LngLat(-80.425, 46.437))
+      .addTo(map);
+
+    const markerElBottomR = document.createElement('div');
+    markerElBottomR.style.cssText = 'width: 40px; height: 40px; background: #00f';
+
+    const markerBottomRight = new mapbox.Marker({
+      element: markerElBottomR,
+      draggable: true,
+      anchor: 'bottom',
+      offset: [20, 40] as PointLike,
+    })
+      .setLngLat(new mapbox.LngLat(-71.516, 37.936))
+      .addTo(map);
+
     const canvas = map.getCanvasContainer();
 
-    function onMove(event: mapbox.MapMouseEvent & mapbox.EventData) {
-      const coords = event.lngLat;
-      canvas.style.cursor = 'grabbing';
-      console.log(coords);
-      (map.getSource(sourceId) as ImageSource).setCoordinates([[coords.lng, coords.lat]]);
-    }
+    markerTopLeft.on('drag', () => {
+      const { lng: lngTl, lat: latTl } = markerTopLeft.getLngLat();
+      const { lng: lngBr, lat: latBr } = markerBottomRight.getLngLat();
+      const geoRefData = [
+        {
+          x: 0,
+          y: 0,
+          latitude: latTl,
+          longitude: lngTl,
+        },
+        {
+          x: width,
+          y: height,
+          latitude: latBr,
+          longitude: lngBr,
+        },
+      ];
 
-    function onUp() {
-      canvas.style.cursor = '';
-
-      map.off('mousemove', onMove);
-      map.off('touchmove', onMove);
-    }
-
-    map.on('mouseenter', layerId, () => {
-      alert('hi');
-      canvas.style.cursor = 'move';
+      const posInfo = getPositionInfo(bbox, geoRefData);
+      (map.getSource(sourceId) as ImageSource).setCoordinates(posInfo);
     });
 
-    map.on('mouseleave', layerId, () => {
-      canvas.style.cursor = '';
+    markerTopLeft.on('dragend', () => {
+      const { lng, lat } = markerTopLeft.getLngLat();
+      upperLeftX = lng.toString();
+      upperLeftY = lat.toString();
     });
 
-    map.on('mousedown', layerId, e => {
-      e.preventDefault();
-
-      canvas.style.cursor = 'grab';
-
-      map.on('mousemove', onMove);
-      map.once('mouseup', onUp);
+    markerBottomRight.on('dragend', () => {
+      const { lng, lat } = markerBottomRight.getLngLat();
+      lowerRightX = lng.toString();
+      lowerRightY = lat.toString();
     });
+
+    markerBottomRight.on('drag', () => {
+      const { lng: lngTl, lat: latTl } = markerTopLeft.getLngLat();
+      const { lng: lngBr, lat: latBr } = markerBottomRight.getLngLat();
+      const geoRefData = [
+        {
+          x: 0,
+          y: 0,
+          latitude: latTl,
+          longitude: lngTl,
+        },
+        {
+          x: width,
+          y: height,
+          latitude: latBr,
+          longitude: lngBr,
+        },
+      ];
+
+      const posInfo = getPositionInfo(bbox, geoRefData);
+      (map.getSource(sourceId) as ImageSource).setCoordinates(posInfo);
+    });
+  }
+
+  export function getPositionInfo(bbox: number[], georefData: K.GeoRefData) {
+    return [
+      latLngToLngLat(projectPointForGeoreference([bbox[0], bbox[3]], { points: georefData })),
+      latLngToLngLat(projectPointForGeoreference([bbox[2], bbox[3]], { points: georefData })),
+      latLngToLngLat(projectPointForGeoreference([bbox[2], bbox[1]], { points: georefData })),
+      latLngToLngLat(projectPointForGeoreference([bbox[0], bbox[1]], { points: georefData })),
+    ];
+  }
+
+  export function latLngToLngLat(t): any {
+    return [t[1], t[0]];
   }
 </script>
 

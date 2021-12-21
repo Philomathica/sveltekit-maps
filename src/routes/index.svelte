@@ -16,6 +16,7 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
 
+  import cookie from 'cookie';
   import Map from '$lib/maps/Map.svelte';
   import MapMarker from '$lib/maps/MapMarker.svelte';
   import { onMount } from 'svelte';
@@ -25,15 +26,14 @@
 
   let loam: any;
   let map: Map;
-  let fileInput: HTMLInputElement;
   let imageInput: HTMLInputElement;
-  let geotiffInput: HTMLInputElement;
   let loadingMessage = '';
   let upperLeftX = '-75.3';
   let upperLeftY = '5.5';
-  let upperRightX = '-73.5';
-  let upperRightY = '3.7';
+  let lowerRightX = '-73.5';
+  let lowerRightY = '3.7';
   let error: string;
+  let uploadedImage: File;
 
   let geoData = { width: 0, height: 0, count: 0, wkt: '', geoTransform: [0, 0, 0, 0, 0, 0], coordinaties: '' };
 
@@ -45,15 +45,25 @@
     loam.initialize(window.location.origin);
   });
 
-  function getCustomImageTileset(tileset: string): void {
-    map.addLayer(tileset, { type: 'raster', url: `mapbox://${tileset}?fresh=true}` }, { id: 'image-layer', type: 'raster', source: tileset });
-    map.goToLocation([-74.4, 4.601], false, 7.12);
+  function onImageSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+    uploadedImage = event.currentTarget.files[0];
+
+    let reader = new FileReader();
+    reader.readAsDataURL(uploadedImage);
+    reader.onload = async (event: ProgressEvent<FileReader>) => {
+      const image = new Image();
+      image.src = event.target.result as string;
+      image.onload = () => {
+        const imageDataUrl = event.target.result as string;
+        addImageLayer('image', imageDataUrl, image.width, image.height);
+      };
+    };
   }
 
-  async function onConvertToGeotiffSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+  async function onConvertToGeotiffSelected() {
     loadingMessage = 'Converting to GeoTIFF...';
-    const file = await loam.open(event.currentTarget.files[0]);
-    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', '-a_ullr', upperLeftX, upperLeftY, upperRightX, upperRightY]);
+    const file = await loam.open(uploadedImage);
+    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:3857', '-a_ullr', upperLeftX, upperLeftY, lowerRightX, lowerRightY]);
 
     const fileBytes: Uint16Array = await dataset.bytes();
     const filename = dataset.source.src.name.split('.')[0] + '.tiff';
@@ -140,41 +150,12 @@
     });
   }
 
-  function onImageSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
-    const imageFile = event.currentTarget.files[0];
-    let reader = new FileReader();
-    reader.readAsDataURL(imageFile);
-    reader.onload = (event: ProgressEvent<FileReader>) => {
-      const imageDataUrl = event.target.result as string;
-      addImageLayer('image', imageDataUrl);
-    };
-  }
-
-  function onGeotiffSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
-    const imageFile = event.currentTarget.files[0];
-    let reader = new FileReader();
-    reader.readAsArrayBuffer(imageFile);
-    reader.onload = async (event: ProgressEvent<FileReader>) => {
-      const imageArrayBuffer = event.target.result as ArrayBuffer;
-      const file = await loam.open(new Blob([imageArrayBuffer], { type: 'image/tiff' }));
-      const dataset = await file.convert(['-of', 'JPEG', '-scale']);
-      const fileBytes: Uint16Array = await dataset.bytes();
-      const blob = new Blob([fileBytes], { type: 'image/jpeg' });
-      const reader = new FileReader();
-      reader.onload = (event: ProgressEvent<FileReader>) => {
-        const file = event.target.result as string;
-        addImageLayer('geotiff-to-image', file);
-      };
-      reader.readAsDataURL(blob);
-    };
-  }
-
-  function addImageLayer(id: string, imageDataUrl: string) {
+  function addImageLayer(id: string, imageDataUrl: string, width: number, height: number) {
     map.addLayer(
       id,
       {
         type: 'image',
-        url: `${imageDataUrl}?dt=${Date.now()}`,
+        url: `${imageDataUrl}`,
         coordinates: [
           [-80.425, 46.437],
           [-71.516, 46.437],
@@ -182,8 +163,24 @@
           [-80.425, 37.936],
         ],
       },
-      { id: id, type: 'raster', source: id },
+      { id, type: 'raster', source: id, paint: { 'raster-fade-duration': 0 } },
     );
+
+    map.dragImage(id, id, width, height);
+  }
+
+  function getCustomImageTileset(tileset: string): void {
+    console.log(tileset);
+    map.addLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: tileset, type: 'raster', source: tileset });
+    map.goToLocation([+upperLeftX, +upperLeftY], false, 7.12);
+  }
+
+  function getLatestTileset() {
+    const cookies = cookie.parse(document.cookie || '');
+    if (cookies.tileset) {
+      console.log(cookies.tileset);
+      getCustomImageTileset(cookies.tileset);
+    }
   }
 </script>
 
@@ -194,17 +191,13 @@
 <div class="flex gap-4 p-4">
   <div>
     <h1 class="text-4xl">Maps</h1>
-    <input />
-    <!-- <button class="p-1 bg-gray-300 border rounded-md" on:click={() => getCustomImageTileset('luukmoret.tileset')}>Get existing tileset</button> -->
-    <!-- <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button> -->
-    <!-- <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={imageInput} /> -->
-    <!-- <button on:click={() => geotiffInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Geotiff</button> -->
-    <input class="hidden" type="file" accept=".tif, .tiff" on:change={e => onGeotiffSelected(e)} bind:this={geotiffInput} />
+    <button on:click={getLatestTileset} type="button" class="p-1 bg-gray-300 border rounded-md">Get latest tileset</button>
+    <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
+    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={imageInput} />
   </div>
 
   <div class="flex flex-col items-center justify-center p-1 border cursor-pointer w-max">
-    <button on:click={() => fileInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Convert image to Geotiff</button>
-    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onConvertToGeotiffSelected(e)} bind:this={fileInput} />
+    <button on:click={() => onConvertToGeotiffSelected()} type="button" class="p-1 bg-gray-300 border rounded-md">Convert image to Geotiff</button>
     <label>
       image upperLeftX
       <input type="text" class="p-1 border mt-1" bind:value={upperLeftX} />
@@ -215,11 +208,11 @@
     </label>
     <label>
       image lowerRightX
-      <input type="text" class="p-1 border mt-1" bind:value={upperRightX} />
+      <input type="text" class="p-1 border mt-1" bind:value={lowerRightX} />
     </label>
     <label>
       image lowerRightY
-      <input type="text" class="p-1 border mt-1" bind:value={upperRightY} />
+      <input type="text" class="p-1 border mt-1" bind:value={lowerRightY} />
     </label>
   </div>
 
@@ -235,7 +228,7 @@
   </pre>
 </div>
 
-<Map lat={35} lon={-84} zoom={3.5} bind:this={map}>
+<Map lat={35} lon={-84} zoom={3.5} bind:this={map} bind:upperLeftX bind:upperLeftY bind:lowerRightX bind:lowerRightY>
   <!-- <MapMarker lat={37.8225} lon={-122.0024} label="Svelte Body Shaping" />
   <MapMarker lat={29.723} lon={-95.4189} label="Svelte Waxing Studio" />
   <MapMarker lat={28.3378} lon={-81.3966} label="Svelte 30 Nutritional Consultants" />
