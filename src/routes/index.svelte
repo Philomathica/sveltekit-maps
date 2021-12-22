@@ -187,7 +187,6 @@
   function getLatestTileset() {
     const cookies = cookie.parse(document.cookie || '');
     if (cookies.tileset) {
-      console.log(cookies.tileset);
       getCustomImageTileset(cookies.tileset);
     }
   }

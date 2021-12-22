@@ -25,10 +25,6 @@ export const get: RequestHandler = async () => {
  * Convert client uploaded s3 image to mapbox tileset.
  */
 export const post: RequestHandler<Locals, string> = async ({ locals, body }) => {
-  if (locals.tileset) {
-    await fetch(`${mapbox.baseTilesetUrl}/${locals.tileset}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
-  }
-
   const nanoid = customAlphabet(nanoidDictionary.alphanumeric, 6);
   const tileset = `${mapbox.username}.${nanoid()}`;
   const { fileUrl, name } = JSON.parse(body);
@@ -37,15 +33,19 @@ export const post: RequestHandler<Locals, string> = async ({ locals, body }) => 
   const response = await fetch(url, { body: payload, method: 'POST', headers: { 'Content-Type': 'application/json' } });
   const result = await response.json();
 
-  if (response.ok) {
-    return {
-      status: 200,
-      body: result,
-      headers: { 'set-cookie': cookie.serialize('tileset', tileset, { path: '/' }) },
-    };
-  } else {
+  if (!response.ok) {
     console.error('error converting image:', result.message);
 
     return { status: 500, body: result };
   }
+
+  if (locals.tileset) {
+    fetch(`${mapbox.baseTilesetUrl}/${locals.tileset}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
+  }
+
+  return {
+    status: 200,
+    body: result,
+    headers: { 'set-cookie': cookie.serialize('tileset', tileset, { path: '/' }) },
+  };
 };
