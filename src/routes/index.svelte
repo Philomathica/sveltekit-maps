@@ -62,7 +62,8 @@
   async function onConvertToGeotiffSelected() {
     loadingMessage = 'Converting to GeoTIFF...';
     const file = await loam.open(uploadedImage);
-    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:3857', '-a_ullr', upperLeftX, upperLeftY, lowerRightX, lowerRightY]);
+    console.log('=>', upperLeftX, upperLeftY, lowerRightX, lowerRightY);
+    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', '-a_ullr', upperLeftX, upperLeftY, lowerRightX, lowerRightY]); // EPSG:4326
 
     const fileBytes: Uint16Array = await dataset.bytes();
     const filename = dataset.source.src.name.split('.')[0] + '.tiff';
@@ -150,22 +151,35 @@
   }
 
   function addImageLayer(id: string, imageDataUrl: string, width: number, height: number) {
+    const bbox = [0, 0, width, height];
+    const geoRefData = {
+      points: [
+        {
+          x: 0,
+          y: 0,
+          latitude: +upperLeftY,
+          longitude: +upperLeftX,
+        },
+        {
+          x: width,
+          y: height,
+          latitude: +lowerRightY,
+          longitude: +lowerRightX,
+        },
+      ],
+    };
+
     map.addLayer(
       id,
       {
         type: 'image',
         url: `${imageDataUrl}`,
-        coordinates: [
-          [-80.425, 46.437],
-          [-71.516, 46.437],
-          [-71.516, 37.936],
-          [-80.425, 37.936],
-        ],
+        coordinates: map.getPositionInfo(bbox, geoRefData),
       },
       { id, type: 'raster', source: id, paint: { 'raster-fade-duration': 0 } },
     );
 
-    map.dragImage(id, id, width, height);
+    map.dragImage(id, id, bbox, geoRefData);
   }
 
   function getCustomImageTileset(tileset: string): void {

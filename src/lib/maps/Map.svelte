@@ -3,7 +3,7 @@
 
   import { onMount, setContext, createEventDispatcher } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
-  import { projectPointForGeoreference } from './georeference';
+  import { projectPointForGeoreference, GeoRefData } from './georeference';
 
   setContext<MapboxContext>(key, {
     getMap: () => map,
@@ -57,9 +57,7 @@
     map.addLayer(layer);
   }
 
-  export function dragImage(sourceId: string, layerId: string, width: number, height: number) {
-    const bbox = [0, 0, width, height];
-
+  export function dragImage(sourceId: string, layerId: string, bbox: number[], georefData: GeoRefData) {
     const markerElTopL = document.createElement('div');
     markerElTopL.style.cssText = 'width: 40px; height: 40px; background: #f00';
 
@@ -69,7 +67,7 @@
       anchor: 'bottom',
       offset: [-20, 0] as PointLike,
     })
-      .setLngLat(new mapbox.LngLat(-80.425, 46.437))
+      .setLngLat(new mapbox.LngLat(georefData.points[0].longitude, georefData.points[0].latitude))
       .addTo(map);
 
     const markerElBottomR = document.createElement('div');
@@ -81,7 +79,7 @@
       anchor: 'bottom',
       offset: [20, 40] as PointLike,
     })
-      .setLngLat(new mapbox.LngLat(-71.516, 37.936))
+      .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
       .addTo(map);
 
     const canvas = map.getCanvasContainer();
@@ -89,20 +87,22 @@
     markerTopLeft.on('drag', () => {
       const { lng: lngTl, lat: latTl } = markerTopLeft.getLngLat();
       const { lng: lngBr, lat: latBr } = markerBottomRight.getLngLat();
-      const geoRefData = [
-        {
-          x: 0,
-          y: 0,
-          latitude: latTl,
-          longitude: lngTl,
-        },
-        {
-          x: width,
-          y: height,
-          latitude: latBr,
-          longitude: lngBr,
-        },
-      ];
+      const geoRefData = {
+        points: [
+          {
+            x: 0,
+            y: 0,
+            latitude: latTl,
+            longitude: lngTl,
+          },
+          {
+            x: bbox[2], // width,
+            y: bbox[3], // height,
+            latitude: latBr,
+            longitude: lngBr,
+          },
+        ],
+      };
 
       const posInfo = getPositionInfo(bbox, geoRefData);
       (map.getSource(sourceId) as ImageSource).setCoordinates(posInfo);
@@ -123,32 +123,34 @@
     markerBottomRight.on('drag', () => {
       const { lng: lngTl, lat: latTl } = markerTopLeft.getLngLat();
       const { lng: lngBr, lat: latBr } = markerBottomRight.getLngLat();
-      const geoRefData = [
-        {
-          x: 0,
-          y: 0,
-          latitude: latTl,
-          longitude: lngTl,
-        },
-        {
-          x: width,
-          y: height,
-          latitude: latBr,
-          longitude: lngBr,
-        },
-      ];
+      const geoRefData = {
+        points: [
+          {
+            x: 0,
+            y: 0,
+            latitude: latTl,
+            longitude: lngTl,
+          },
+          {
+            x: bbox[2], // width,
+            y: bbox[3], // height,
+            latitude: latBr,
+            longitude: lngBr,
+          },
+        ],
+      };
 
       const posInfo = getPositionInfo(bbox, geoRefData);
       (map.getSource(sourceId) as ImageSource).setCoordinates(posInfo);
     });
   }
 
-  export function getPositionInfo(bbox: number[], georefData: K.GeoRefData) {
+  export function getPositionInfo(bbox: number[], georefData: GeoRefData) {
     return [
-      latLngToLngLat(projectPointForGeoreference([bbox[0], bbox[3]], { points: georefData })),
-      latLngToLngLat(projectPointForGeoreference([bbox[2], bbox[3]], { points: georefData })),
-      latLngToLngLat(projectPointForGeoreference([bbox[2], bbox[1]], { points: georefData })),
-      latLngToLngLat(projectPointForGeoreference([bbox[0], bbox[1]], { points: georefData })),
+      latLngToLngLat(projectPointForGeoreference([bbox[0], bbox[3]], georefData)),
+      latLngToLngLat(projectPointForGeoreference([bbox[2], bbox[3]], georefData)),
+      latLngToLngLat(projectPointForGeoreference([bbox[2], bbox[1]], georefData)),
+      latLngToLngLat(projectPointForGeoreference([bbox[0], bbox[1]], georefData)),
     ];
   }
 
