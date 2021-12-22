@@ -143,11 +143,8 @@
       return [geoTransform[0] + geoTransform[1] * x + geoTransform[2] * y, geoTransform[3] + geoTransform[4] * x + geoTransform[5] * y];
     });
 
-    const cornersLngLat = await loam.reproject(wkt, EPSG3857, cornersGeo);
-    cornersLngLat.forEach(([lng, lat], i: number) => {
-      geoData.coordinaties +=
-        '(' + cornersGeo[i][0].toString() + ', ' + cornersGeo[i][1].toString() + ') (' + lng.toString() + ', ' + lat.toString() + ')\n';
-    });
+    const corners = ['leftTop', 'rightTop', 'rightBottom', 'leftBottom'];
+    cornersGeo.forEach(([x, y], i) => (geoData.coordinaties += `${corners[i]}: ${x},${y};\n`));
   }
 
   function addImageLayer(id: string, imageDataUrl: string, width: number, height: number) {
