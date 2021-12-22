@@ -18,7 +18,7 @@
 
   import cookie from 'cookie';
   import Map from '$lib/maps/Map.svelte';
-  import MapMarker from '$lib/maps/MapMarker.svelte';
+  // import MapMarker from '$lib/maps/MapMarker.svelte';
   import { onMount } from 'svelte';
 
   export let signedUrl: string;
@@ -236,7 +236,8 @@
   {/if}
 
   <pre>
-    width: {geoData.width}<br/>height: {geoData.height}<br/>band count: {geoData.count}<br/>coordinate system: {geoData.wkt}<br/>corner coordinates: <br/>{geoData.coordinaties}
+    width: {geoData.width}<br />height: {geoData.height}<br />band count: {geoData.count}<br />coordinate system: {geoData.wkt}<br
+    />corner coordinates: <br />{geoData.coordinaties}
   </pre>
 </div>
 

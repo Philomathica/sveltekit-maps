@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as _ from 'lodash';
 import SphericalMercator from '@mapbox/sphericalmercator';
 
@@ -131,7 +132,7 @@ export function unprojectFeatureForGeoreference(feature, georeference: GeoRefDat
     _feature.geometry.coordinates = [projectedPoint[1], projectedPoint[0]]; //GeoJSON is lng/lat
   } else if (_feature.geometry.type === 'Polygon') {
     _feature.geometry.coordinates = _.map(_feature.geometry.coordinates, function (innerPolygon) {
-      return _.map(innerPolygon, function (point) {
+      return _.map(innerPolygon, (point: any) => {
         const projectedPoint = unprojectLatLngForGeoreference([point[1], point[0]], georeference); //GeoJSON is lng/lat
         return projectedPoint;
       });

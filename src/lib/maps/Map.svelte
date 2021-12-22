@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ImageSource, PointLike } from 'mapbox-gl';
 
-  import { onMount, setContext, createEventDispatcher } from 'svelte';
+  import { onMount, setContext } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
   import { projectPointForGeoreference, GeoRefData } from './georeference';
 
@@ -20,7 +20,6 @@
 
   let container: HTMLElement;
   let map: mapbox.Map;
-  const dispatch = createEventDispatcher();
 
   onMount(() => {
     const link = document.createElement('link');
@@ -57,7 +56,7 @@
     map.addLayer(layer);
   }
 
-  export function dragImage(sourceId: string, layerId: string, bbox: number[], georefData: GeoRefData) {
+  export function dragImage(sourceId: string, _layerId: string, bbox: number[], georefData: GeoRefData) {
     const markerElTopL = document.createElement('div');
     markerElTopL.style.cssText = 'width: 40px; height: 40px; background: #f00';
 
@@ -82,7 +81,7 @@
       .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
       .addTo(map);
 
-    const canvas = map.getCanvasContainer();
+    // const canvas = map.getCanvasContainer();
 
     markerTopLeft.on('drag', () => {
       const { lng: lngTl, lat: latTl } = markerTopLeft.getLngLat();
@@ -154,7 +153,7 @@
     ];
   }
 
-  export function latLngToLngLat(t): any {
+  export function latLngToLngLat(t: any): any {
     return [t[1], t[0]];
   }
 </script>
