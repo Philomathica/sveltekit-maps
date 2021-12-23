@@ -9,8 +9,6 @@
     getMap: () => map,
   });
 
-  export let lat: number;
-  export let lon: number;
   export let zoom: number;
 
   export let upperLeftX: string;
@@ -30,7 +28,7 @@
       map = new mapbox.Map({
         container,
         style: 'mapbox://styles/mapbox/streets-v9',
-        center: [lon, lat],
+        center: [0, 0],
         zoom,
       });
     };
@@ -56,104 +54,96 @@
     map.addLayer(layer);
   }
 
-  export function dragImage(sourceId: string, _layerId: string, bbox: number[], georefData: GeoRefData) {
-    const markerElTopL = document.createElement('div');
-    markerElTopL.style.cssText = 'width: 40px; height: 40px; background: #f00';
+  export function dragImage(sourceId: string, layerId: string, georefData: GeoRefData) {
+    const markerElBL = document.createElement('div');
+    markerElBL.style.cssText = 'width: 10px; height: 10px; background: #f00';
 
-    const markerTopLeft = new mapbox.Marker({
-      element: markerElTopL,
+    const markerBL = new mapbox.Marker({
+      element: markerElBL,
       draggable: true,
       anchor: 'bottom',
-      offset: [-20, 0] as PointLike,
+      offset: [0, 0] as PointLike,
     })
       .setLngLat(new mapbox.LngLat(georefData.points[0].longitude, georefData.points[0].latitude))
       .addTo(map);
 
-    const markerElBottomR = document.createElement('div');
-    markerElBottomR.style.cssText = 'width: 40px; height: 40px; background: #00f';
+    const markerElTopR = document.createElement('div');
+    markerElTopR.style.cssText = 'width: 10px; height: 10px; background: #00f';
 
-    const markerBottomRight = new mapbox.Marker({
-      element: markerElBottomR,
+    const markerTR = new mapbox.Marker({
+      element: markerElTopR,
       draggable: true,
       anchor: 'bottom',
-      offset: [20, 40] as PointLike,
+      offset: [0, 0] as PointLike,
     })
       .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
       .addTo(map);
 
     // const canvas = map.getCanvasContainer();
 
-    markerTopLeft.on('drag', () => {
-      const { lng: lngTl, lat: latTl } = markerTopLeft.getLngLat();
-      const { lng: lngBr, lat: latBr } = markerBottomRight.getLngLat();
-      const geoRefData = {
-        points: [
-          {
-            x: 0,
-            y: 0,
-            latitude: latTl,
-            longitude: lngTl,
-          },
-          {
-            x: bbox[2], // width,
-            y: bbox[3], // height,
-            latitude: latBr,
-            longitude: lngBr,
-          },
-        ],
-      };
-
-      const posInfo = getPositionInfo(bbox, geoRefData);
+    markerBL.on('drag', () => {
+      const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
       (map.getSource(sourceId) as ImageSource).setCoordinates(posInfo);
     });
 
-    markerTopLeft.on('dragend', () => {
-      const { lng, lat } = markerTopLeft.getLngLat();
-      upperLeftX = lng.toString();
-      upperLeftY = lat.toString();
-    });
-
-    markerBottomRight.on('dragend', () => {
-      const { lng, lat } = markerBottomRight.getLngLat();
-      lowerRightX = lng.toString();
-      lowerRightY = lat.toString();
-    });
-
-    markerBottomRight.on('drag', () => {
-      const { lng: lngTl, lat: latTl } = markerTopLeft.getLngLat();
-      const { lng: lngBr, lat: latBr } = markerBottomRight.getLngLat();
-      const geoRefData = {
-        points: [
-          {
-            x: 0,
-            y: 0,
-            latitude: latTl,
-            longitude: lngTl,
-          },
-          {
-            x: bbox[2], // width,
-            y: bbox[3], // height,
-            latitude: latBr,
-            longitude: lngBr,
-          },
-        ],
-      };
-
-      const posInfo = getPositionInfo(bbox, geoRefData);
+    markerTR.on('drag', () => {
+      const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
       (map.getSource(sourceId) as ImageSource).setCoordinates(posInfo);
+    });
+
+    markerBL.on('dragend', () => {
+      const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
+      upperLeftX = posInfo[0][0].toString();
+      upperLeftY = posInfo[0][1].toString();
+      lowerRightX = posInfo[2][0].toString();
+      lowerRightY = posInfo[2][1].toString();
+    });
+
+    markerTR.on('dragend', () => {
+      const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
+      upperLeftX = posInfo[0][0].toString();
+      upperLeftY = posInfo[0][1].toString();
+      lowerRightX = posInfo[2][0].toString();
+      lowerRightY = posInfo[2][1].toString();
     });
   }
 
-  export function getPositionInfo(bbox: number[], georefData: GeoRefData) {
+  export function getPositionInfo(georefData: GeoRefData): number[][] {
     return [
-      latLngToLngLat(projectPointForGeoreference([bbox[0], bbox[3]], georefData)),
-      latLngToLngLat(projectPointForGeoreference([bbox[2], bbox[3]], georefData)),
-      latLngToLngLat(projectPointForGeoreference([bbox[2], bbox[1]], georefData)),
-      latLngToLngLat(projectPointForGeoreference([bbox[0], bbox[1]], georefData)),
+      latLngToLngLat(projectPointForGeoreference([georefData.bbox[0], georefData.bbox[3]], georefData)),
+      latLngToLngLat(projectPointForGeoreference([georefData.bbox[2], georefData.bbox[3]], georefData)),
+      latLngToLngLat(projectPointForGeoreference([georefData.bbox[2], georefData.bbox[1]], georefData)),
+      latLngToLngLat(projectPointForGeoreference([georefData.bbox[0], georefData.bbox[1]], georefData)),
     ];
   }
 
-  export function latLngToLngLat(t: any): any {
+  export function getMarkersPosInfo(markerBL: mapbox.Marker, markerTR: mapbox.Marker, georefData: GeoRefData): number[][] {
+    const { lng: lngBL, lat: latBL } = markerBL.getLngLat();
+    const { lng: lngTR, lat: latTR } = markerTR.getLngLat();
+    const newGeoRefData = {
+      points: [
+        {
+          x: 0,
+          y: 0,
+          // SW
+          longitude: lngBL,
+          latitude: latBL,
+        },
+        {
+          x: georefData.bbox[2], // width,
+          y: georefData.bbox[3], // height,
+          // NE
+          longitude: lngTR,
+          latitude: latTR,
+        },
+      ],
+      bbox: georefData.bbox,
+    };
+
+    return getPositionInfo(newGeoRefData);
+  }
+
+  export function latLngToLngLat(t): any {
     return [t[1], t[0]];
   }
 </script>

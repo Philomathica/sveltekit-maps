@@ -20,6 +20,7 @@
   import Map from '$lib/maps/Map.svelte';
   // import MapMarker from '$lib/maps/MapMarker.svelte';
   import { onMount } from 'svelte';
+  import type { GeoRefData } from '$lib/maps/georeference';
 
   export let signedUrl: string;
   export let fileUrl: string;
@@ -28,17 +29,40 @@
   let map: Map;
   let imageInput: HTMLInputElement;
   let loadingMessage = '';
-  let upperLeftX = '-75.3';
-  let upperLeftY = '5.5';
-  let lowerRightX = '-73.5';
-  let lowerRightY = '3.7';
+
+  let upperLeftX;
+  let upperLeftY;
+  let lowerRightX;
+  let lowerRightY;
+
+  let geoRefData: GeoRefData = {
+    points: [
+      {
+        x: 0,
+        y: 0,
+        // SW
+        longitude: 0,
+        latitude: 0,
+      },
+      {
+        x: 600,
+        y: 400,
+        // NE
+        longitude: 6,
+        latitude: 4,
+      },
+    ],
+    bbox: [0, 0, 600, 400],
+  };
+
   let error: string;
   let uploadedImage: File;
 
-  let geoData = { width: 0, height: 0, count: 0, wkt: '', geoTransform: [0, 0, 0, 0, 0, 0], coordinaties: '' };
+  // let geoData = { width: 0, height: 0, count: 0, wkt: '', geoTransform: [0, 0, 0, 0, 0, 0], coordinaties: '' };
 
-  const EPSG3857 =
-    'PROJCS["WGS 84 / Pseudo-Mercator",    GEOGCS["WGS 84",        DATUM["WGS_1984",            SPHEROID["WGS 84",6378137,298.257223563,                AUTHORITY["EPSG","7030"]],            AUTHORITY["EPSG","6326"]],        PRIMEM["Greenwich",0,            AUTHORITY["EPSG","8901"]],        UNIT["degree",0.0174532925199433,            AUTHORITY["EPSG","9122"]],        AUTHORITY["EPSG","4326"]],    PROJECTION["Mercator_1SP"],    PARAMETER["central_meridian",0],    PARAMETER["scale_factor",1],    PARAMETER["false_easting",0],    PARAMETER["false_northing",0],    UNIT["metre",1,        AUTHORITY["EPSG","9001"]],    AXIS["X",EAST],    AXIS["Y",NORTH],    EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"],    AUTHORITY["EPSG","3857"]]';
+  // const EPSG3857 =
+  //   'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"],AUTHORITY["EPSG","3857"]]';
+
   onMount(async () => {
     loam = await import('loam');
     loam.initialize(window.location.origin);
@@ -54,7 +78,7 @@
       image.src = event.target.result as string;
       image.onload = () => {
         const imageDataUrl = event.target.result as string;
-        addImageLayer('image', imageDataUrl, image.width, image.height);
+        addImageLayer('image', imageDataUrl, geoRefData);
       };
     };
   }
@@ -62,13 +86,18 @@
   async function onConvertToGeotiffSelected() {
     loadingMessage = 'Converting to GeoTIFF...';
     const file = await loam.open(uploadedImage);
-    console.log('=>', upperLeftX, upperLeftY, lowerRightX, lowerRightY);
+
     const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', '-a_ullr', upperLeftX, upperLeftY, lowerRightX, lowerRightY]); // EPSG:4326
 
-    const fileBytes: Uint16Array = await dataset.bytes();
-    const filename = dataset.source.src.name.split('.')[0] + '.tiff';
+    const warpedDataset = await dataset.warp(['-tr', '2', '-2', '-te', '0', '0', '6', '4']); // EPSG:4326
+
+    const fileBytes: Uint16Array = await warpedDataset.bytes();
+    const filename = warpedDataset.source.src.name.split('.')[0] + '.tiff';
     const geotiffFile = new File([fileBytes], filename, { type: 'image/tiff' });
-    await Promise.all([printGeoTiffValues(dataset), uploadGeotiff(geotiffFile)]);
+    await Promise.all([
+      // printGeoTiffValues(warpedDataset),
+      uploadGeotiff(geotiffFile),
+    ]);
   }
 
   /**
@@ -118,65 +147,56 @@
     return await getUploadResultWhenDone(id);
   }
 
-  async function printGeoTiffValues(dataset: any) {
-    const [width, height, count, wkt, geoTransform] = await Promise.all([
-      dataset.width(),
-      dataset.height(),
-      dataset.count(),
-      dataset.wkt(),
-      dataset.transform(),
-    ]);
-    geoData.width = width;
-    geoData.height = height;
-    geoData.count = count;
-    geoData.wkt = wkt;
+  // async function printGeoTiffValues(dataset: any) {
+  //   const [width, height, count, wkt, geoTransform] = await Promise.all([
+  //     dataset.width(),
+  //     dataset.height(),
+  //     dataset.count(),
+  //     dataset.wkt(),
+  //     dataset.transform(),
+  //   ]);
+  //   geoData.width = width;
+  //   geoData.height = height;
+  //   geoData.count = count;
+  //   geoData.wkt = wkt;
 
-    const cornersPx = [
-      [0, 0],
-      [width, 0],
-      [width, height],
-      [0, height],
-    ];
+  //   const cornersPx = [
+  //     [0, 0],
+  //     [width, 0],
+  //     [width, height],
+  //     [0, height],
+  //   ];
 
-    // https://gdal.org/user/raster_data_model.html#affine-geotransform
-    const cornersGeo = cornersPx.map(([x, y]) => {
-      return [geoTransform[0] + geoTransform[1] * x + geoTransform[2] * y, geoTransform[3] + geoTransform[4] * x + geoTransform[5] * y];
-    });
+  //   // https://gdal.org/user/raster_data_model.html#affine-geotransform
+  //   const cornersGeo = cornersPx.map(([x, y]) => {
+  //     return [geoTransform[0] + geoTransform[1] * x + geoTransform[2] * y, geoTransform[3] + geoTransform[4] * x + geoTransform[5] * y];
+  //   });
 
-    const corners = ['leftTop', 'rightTop', 'rightBottom', 'leftBottom'];
-    cornersGeo.forEach(([x, y], i) => (geoData.coordinaties += `${corners[i]}: ${x},${y};\n`));
-  }
+  //   const cornersLngLat = await loam.reproject(wkt, EPSG3857, cornersGeo);
+  //   cornersLngLat.forEach(([lng, lat], i: number) => {
+  //     geoData.coordinaties +=
+  //       '(' + cornersGeo[i][0].toString() + ', ' + cornersGeo[i][1].toString() + ') (' + lng.toString() + ', ' + lat.toString() + ')\n';
+  //   });
+  // }
 
-  function addImageLayer(id: string, imageDataUrl: string, width: number, height: number) {
-    const bbox = [0, 0, width, height];
-    const geoRefData = {
-      points: [
-        {
-          x: 0,
-          y: 0,
-          latitude: +upperLeftY,
-          longitude: +upperLeftX,
-        },
-        {
-          x: width,
-          y: height,
-          latitude: +lowerRightY,
-          longitude: +lowerRightX,
-        },
-      ],
-    };
+  function addImageLayer(id: string, imageDataUrl: string, geoRefData: GeoRefData) {
+    const posInfo = map.getPositionInfo(geoRefData);
+    upperLeftX = posInfo[0][0].toString();
+    upperLeftY = posInfo[0][1].toString();
+    lowerRightX = posInfo[2][0].toString();
+    lowerRightY = posInfo[2][1].toString();
 
     map.addLayer(
       id,
       {
         type: 'image',
         url: `${imageDataUrl}`,
-        coordinates: map.getPositionInfo(bbox, geoRefData),
+        coordinates: map.getPositionInfo(geoRefData),
       },
       { id, type: 'raster', source: id, paint: { 'raster-fade-duration': 0 } },
     );
 
-    map.dragImage(id, id, bbox, geoRefData);
+    map.dragImage(id, id, geoRefData);
   }
 
   function getCustomImageTileset(tileset: string): void {
@@ -230,11 +250,6 @@
   {#if error}
     <p>error processing image: {error}</p>
   {/if}
-
-  <pre>
-    width: {geoData.width}<br />height: {geoData.height}<br />band count: {geoData.count}<br />coordinate system: {geoData.wkt}<br
-    />corner coordinates: <br />{geoData.coordinaties}
-  </pre>
 </div>
 
 <Map lat={35} lon={-84} zoom={3.5} bind:this={map} bind:upperLeftX bind:upperLeftY bind:lowerRightX bind:lowerRightY>

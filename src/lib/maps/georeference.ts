@@ -9,6 +9,7 @@ export interface GeoRefData {
     latitude: number;
     longitude: number;
   }[];
+  bbox: number[];
 }
 
 /**
