@@ -59,7 +59,7 @@
     markerElBL.style.cssText = 'width: 10px; height: 10px; background: #f00';
 
     const markerBL = new mapbox.Marker({
-      element: markerElBL,
+      // element: markerElBL,
       draggable: true,
       anchor: 'bottom',
       offset: [0, 0] as PointLike,
@@ -71,7 +71,7 @@
     markerElTopR.style.cssText = 'width: 10px; height: 10px; background: #00f';
 
     const markerTR = new mapbox.Marker({
-      element: markerElTopR,
+      // element: markerElTopR,
       draggable: true,
       anchor: 'bottom',
       offset: [0, 0] as PointLike,
@@ -97,6 +97,8 @@
       upperLeftY = posInfo[0][1].toString();
       lowerRightX = posInfo[2][0].toString();
       lowerRightY = posInfo[2][1].toString();
+
+      updatePointsSource(posInfo);
     });
 
     markerTR.on('dragend', () => {
@@ -105,7 +107,182 @@
       upperLeftY = posInfo[0][1].toString();
       lowerRightX = posInfo[2][0].toString();
       lowerRightY = posInfo[2][1].toString();
+      updatePointsSource(posInfo);
     });
+  }
+
+  function updatePointsSource(posInfo) {
+    if (!posInfo) {
+      return;
+    }
+
+    const upperLX = posInfo[0][0].toString();
+    const upperLY = posInfo[0][1].toString();
+    const upperRX = posInfo[1][0].toString();
+    const upperRY = posInfo[1][1].toString();
+    const lowerRX = posInfo[2][0].toString();
+    const lowerRY = posInfo[2][1].toString();
+    const lowerLX = posInfo[3][0].toString();
+    const lowerLY = posInfo[3][1].toString();
+
+    console.log('posInfo');
+    console.log('1:', upperLX, upperLY, '\n', '2:', upperRX, upperRY, '\n', '3:', lowerLX, lowerRY, '\n', '4:', lowerRX, lowerRY);
+
+    const helperPoints = {
+      type: 'FeatureCollection',
+      features: [
+        // NW (initial pos)
+        {
+          type: 'Feature',
+          properties: { description: '1' },
+          geometry: {
+            type: 'Point',
+            coordinates: [+upperLX, +upperLY],
+          },
+        },
+        // NE (initial pos)
+        {
+          type: 'Feature',
+          properties: { description: '2' },
+          geometry: {
+            type: 'Point',
+            coordinates: [+upperRX, +upperRY],
+          },
+        },
+        // SE (initial pos)
+        {
+          type: 'Feature',
+          properties: { description: '3' },
+          geometry: {
+            type: 'Point',
+            coordinates: [+lowerRX, +lowerRY],
+          },
+        },
+        // SW (initial pos)
+        {
+          type: 'Feature',
+          properties: { description: '4' },
+          geometry: {
+            type: 'Point',
+            coordinates: [+lowerLX, +lowerLY],
+          },
+        },
+      ],
+    };
+
+    if (!map.getSource('pointSource')) {
+      map.addSource('pointSource', {
+        type: 'geojson',
+        data: helperPoints as any,
+      });
+    } else {
+      (map.getSource('pointSource') as any).setData(helperPoints);
+    }
+
+    if (!map.getLayer('pointsLayer')) {
+      map.addLayer({
+        id: 'pointsLayer',
+        type: 'circle',
+        source: 'pointSource',
+        paint: {
+          'circle-radius': 20,
+          'circle-color': '#fff',
+          'circle-opacity': 0.5,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#ccc',
+        },
+      });
+
+      map.addLayer({
+        id: 'labels',
+        type: 'symbol',
+        source: 'pointSource',
+        layout: {
+          'text-field': ['get', 'description'],
+          'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+          'text-radial-offset': 0,
+          'text-justify': 'auto',
+        },
+      });
+    }
+
+    // Draw bounding box
+    const c = [
+      [+upperLX, +upperLY], // 1
+      [+upperRX, +upperRY], // 2
+      [+lowerRX, +lowerRY], // 3
+      [+lowerLX, +lowerLY], // 4
+    ];
+    const bounds = c.reduce((r, a) => r.extend(a as any), new mapbox.LngLatBounds(c[0] as any, c[0] as any));
+    const bboxP1 = [bounds.getWest(), bounds.getNorth()];
+    const bboxP2 = [bounds.getEast(), bounds.getNorth()];
+    const bboxP3 = [bounds.getEast(), bounds.getSouth()];
+    const bboxP4 = [bounds.getWest(), bounds.getSouth()];
+
+    console.log('bbox:', bboxP1, bboxP2, bboxP3, bboxP4);
+
+    const bboxPoints = {
+      type: 'FeatureCollection',
+      features: [
+        // NW (initial pos)
+        {
+          type: 'Feature',
+          properties: { description: '1' },
+          geometry: {
+            type: 'Point',
+            coordinates: bboxP1,
+          },
+        },
+        {
+          type: 'Feature',
+          properties: { description: '2' },
+          geometry: {
+            type: 'Point',
+            coordinates: bboxP2,
+          },
+        },
+        {
+          type: 'Feature',
+          properties: { description: '3' },
+          geometry: {
+            type: 'Point',
+            coordinates: bboxP3,
+          },
+        },
+        {
+          type: 'Feature',
+          properties: { description: '4' },
+          geometry: {
+            type: 'Point',
+            coordinates: bboxP4,
+          },
+        },
+      ],
+    };
+
+    if (!map.getSource('bboxSource')) {
+      map.addSource('bboxSource', {
+        type: 'geojson',
+        data: bboxPoints as any,
+      });
+    } else {
+      (map.getSource('bboxSource') as any).setData(bboxPoints);
+    }
+
+    if (!map.getLayer('bboxLayer')) {
+      map.addLayer({
+        id: 'bboxLayer',
+        type: 'circle',
+        source: 'bboxSource',
+        paint: {
+          'circle-radius': 5,
+          'circle-color': '#000',
+          'circle-opacity': 1,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#0F0',
+        },
+      });
+    }
   }
 
   export function getPositionInfo(georefData: GeoRefData): number[][] {

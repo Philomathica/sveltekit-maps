@@ -106,6 +106,7 @@
 
     const bla = await warpedDataset.transform();
     console.log(bla);
+    console.log(`${upperLeftX} ${upperLeftY} ${lowerRightX} ${lowerRightY}`);
 
     const fileBytes: Uint16Array = await warpedDataset.bytes();
     const filename = warpedDataset.source.src.name.split('.')[0] + '.tiff';
