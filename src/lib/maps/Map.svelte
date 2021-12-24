@@ -125,8 +125,8 @@
     const lowerLX = posInfo[3][0].toString();
     const lowerLY = posInfo[3][1].toString();
 
-    console.log('posInfo');
-    console.log('1:', upperLX, upperLY, '\n', '2:', upperRX, upperRY, '\n', '3:', lowerLX, lowerRY, '\n', '4:', lowerRX, lowerRY);
+    console.log('posInfo', posInfo);
+    console.log('1:', upperLX, upperLY, '\n', '2:', upperRX, upperRY, '\n', '3:', lowerRX, lowerRY, '\n', '4:', lowerLX, lowerLY);
 
     const helperPoints = {
       type: 'FeatureCollection',
