@@ -17,6 +17,7 @@
     "@aws-sdk/s3-request-presigner": "^3.44.0",
     "@mapbox/sphericalmercator": "^1.2.0",
     "cookie": "^0.4.1",
+    "gdal-js": "^2.0.0",
     "loam": "^1.1.0",
     "mapbox-gl": "^2.6.1",
     "nanoid": "^3.1.30",

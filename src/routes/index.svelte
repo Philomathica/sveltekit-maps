@@ -85,11 +85,27 @@
 
   async function onConvertToGeotiffSelected() {
     loadingMessage = 'Converting to GeoTIFF...';
+
     const file = await loam.open(uploadedImage);
 
-    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', '-a_ullr', upperLeftX, upperLeftY, lowerRightX, lowerRightY]); // EPSG:4326
+    const warpedDataset = await file.convert([
+      '-of',
+      'GTiff',
+      '-outsize',
+      '600',
+      '400',
+      '-a_srs',
+      'EPSG:3857',
+      '-a_ullr',
+      upperLeftX,
+      upperLeftY,
+      lowerRightX,
+      lowerRightY,
+    ]);
+    // const warpedDataset = await dataset.warp(['-tr', '1.0', '-1.0', '-r', 'bilinear']); // EPSG:4326
 
-    const warpedDataset = await dataset.warp(['-tr', '2', '-2', '-te', '0', '0', '6', '4']); // EPSG:4326
+    const bla = await warpedDataset.transform();
+    console.log(bla);
 
     const fileBytes: Uint16Array = await warpedDataset.bytes();
     const filename = warpedDataset.source.src.name.split('.')[0] + '.tiff';
