@@ -16,6 +16,8 @@
   export let lowerRightX: string;
   export let lowerRightY: string;
 
+  export let gcps: string | number[];
+
   let container: HTMLElement;
   let map: mapbox.Map;
 
@@ -98,7 +100,7 @@
       lowerRightX = posInfo[2][0].toString();
       lowerRightY = posInfo[2][1].toString();
 
-      updatePointsSource(posInfo);
+      updatePointsSource(posInfo, georefData);
     });
 
     markerTR.on('dragend', () => {
@@ -107,11 +109,11 @@
       upperLeftY = posInfo[0][1].toString();
       lowerRightX = posInfo[2][0].toString();
       lowerRightY = posInfo[2][1].toString();
-      updatePointsSource(posInfo);
+      updatePointsSource(posInfo, georefData);
     });
   }
 
-  function updatePointsSource(posInfo) {
+  function updatePointsSource(posInfo, georefData: GeoRefData) {
     if (!posInfo) {
       return;
     }
@@ -125,8 +127,33 @@
     const lowerLX = posInfo[3][0].toString();
     const lowerLY = posInfo[3][1].toString();
 
+    gcps = [
+      '-gcp',
+      '0',
+      '0',
+      upperLX,
+      upperLY,
+      '-gcp',
+      georefData.bbox[2].toString(),
+      '0',
+      upperRX,
+      upperRY,
+      '-gcp',
+      georefData.bbox[2].toString(),
+      georefData.bbox[3].toString(),
+      lowerRX,
+      lowerRY,
+      '-gcp',
+      '0',
+      georefData.bbox[3].toString(),
+      lowerLX,
+      lowerLY,
+    ];
+
     console.log('posInfo', posInfo);
-    console.log('1:', upperLX, upperLY, '\n', '2:', upperRX, upperRY, '\n', '3:', lowerRX, lowerRY, '\n', '4:', lowerLX, lowerLY);
+    console.log(
+      `gdal_translate -ot Byte -of GTiff -co COMPRESS=DEFLATE -co TILED=YES -co PREDICTOR=2 -a_nodata -9999 -outsize 100% 100% -gcp 0 0 ${upperLX} ${upperLY} -gcp 600 0 ${upperRX} ${upperRY} -gcp 600 400 ${lowerRX} ${lowerRY} -gcp 0 400 ${lowerLX} ${lowerLY} -a_srs EPSG:4326 600x400.png 600x400-tr.tif`,
+    );
 
     const helperPoints = {
       type: 'FeatureCollection',

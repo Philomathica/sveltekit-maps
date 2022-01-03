@@ -34,6 +34,7 @@
   let upperLeftY;
   let lowerRightX;
   let lowerRightY;
+  let gcps;
 
   let geoRefData: GeoRefData = {
     points: [
@@ -58,11 +59,6 @@
   let error: string;
   let uploadedImage: File;
 
-  // let geoData = { width: 0, height: 0, count: 0, wkt: '', geoTransform: [0, 0, 0, 0, 0, 0], coordinaties: '' };
-
-  // const EPSG3857 =
-  //   'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"],AUTHORITY["EPSG","3857"]]';
-
   onMount(async () => {
     loam = await import('loam');
     loam.initialize(window.location.origin);
@@ -78,7 +74,30 @@
       image.src = event.target.result as string;
       image.onload = () => {
         const imageDataUrl = event.target.result as string;
-        addImageLayer('image', imageDataUrl, geoRefData);
+
+        console.log(image.naturalWidth, image.naturalHeight);
+
+        const newGeoRefData = {
+          points: [
+            {
+              x: 0,
+              y: 0,
+              // SW
+              longitude: 0,
+              latitude: 0,
+            },
+            {
+              x: image.naturalWidth,
+              y: image.naturalHeight,
+              // NE
+              longitude: 6,
+              latitude: 4,
+            },
+          ],
+          bbox: [0, 0, image.naturalWidth, image.naturalHeight],
+        };
+
+        addImageLayer('image', imageDataUrl, newGeoRefData);
       };
     };
   }
@@ -88,29 +107,37 @@
 
     const file = await loam.open(uploadedImage);
 
-    const warpedDataset = await file.convert([
+    // `gdal_translate -ot Byte -of GTiff -co COMPRESS=DEFLATE -co TILED=YES -co PREDICTOR=2 -a_nodata -9999 -outsize 100% 100% -gcp 0 0 ${upperLX} ${upperLY} -gcp 600 0 ${upperRX} ${upperRY} -gcp 600 400 ${lowerRX} ${lowerRY} -gcp 0 400 ${lowerLX} ${lowerLY} -a_srs EPSG:4326 600x400.png 600x400-tr.tif`,
+
+    console.log('gcps', gcps);
+    const dataset = await file.convert([
       '-of',
       'GTiff',
-      '-outsize',
-      '600',
-      '400',
+      '-co',
+      'COMPRESS=LZW',
+      '-co',
+      'TILED=YES',
+      '-co',
+      'PREDICTOR=2',
+      ...gcps,
       '-a_srs',
-      'EPSG:3857',
-      '-a_ullr',
-      upperLeftX,
-      upperLeftY,
-      lowerRightX,
-      lowerRightY,
+      'EPSG:4326',
     ]);
-    // const warpedDataset = await dataset.warp(['-tr', '1.0', '-1.0', '-r', 'bilinear']); // EPSG:4326
+    const fileBytes1: Uint16Array = await dataset.bytes();
+    console.log('1', fileBytes1);
 
-    const bla = await warpedDataset.transform();
-    console.log(bla);
-    console.log(`${upperLeftX} ${upperLeftY} ${lowerRightX} ${lowerRightY}`);
+    const warpedDataset = await dataset.warp(['-of', 'GTiff', '-s_srs', 'EPSG:4326', '-t_srs', 'EPSG:3857', '-dstalpha', '-r', 'bilinear']);
+    const fileBytes2: Uint16Array = await warpedDataset.bytes();
+    console.log('2', fileBytes2);
 
-    const fileBytes: Uint16Array = await warpedDataset.bytes();
-    const filename = warpedDataset.source.src.name.split('.')[0] + '.tiff';
-    const geotiffFile = new File([fileBytes], filename, { type: 'image/tiff' });
+    const dataset2 = await warpedDataset.convert(['-of', 'GTiff', '-co', 'COMPRESS=LZW', '-co', 'TILED=YES', '-co', 'PREDICTOR=2']);
+
+    // const warpedDataset = await warpedDataset.transform();
+
+    const fileBytes3: Uint16Array = await dataset2.bytes();
+    console.log('3', fileBytes3);
+    const filename = dataset2.source.src.name.split('.')[0] + '.tiff';
+    const geotiffFile = new File([fileBytes3], filename, { type: 'image/tiff' });
     await Promise.all([
       // printGeoTiffValues(warpedDataset),
       uploadGeotiff(geotiffFile),
@@ -269,7 +296,7 @@
   {/if}
 </div>
 
-<Map lat={35} lon={-84} zoom={3.5} bind:this={map} bind:upperLeftX bind:upperLeftY bind:lowerRightX bind:lowerRightY>
+<Map lat={35} lon={-84} zoom={3.5} bind:this={map} bind:upperLeftX bind:upperLeftY bind:lowerRightX bind:lowerRightY bind:gcps>
   <!-- <MapMarker lat={37.8225} lon={-122.0024} label="Svelte Body Shaping" />
   <MapMarker lat={29.723} lon={-95.4189} label="Svelte Waxing Studio" />
   <MapMarker lat={28.3378} lon={-81.3966} label="Svelte 30 Nutritional Consultants" />
