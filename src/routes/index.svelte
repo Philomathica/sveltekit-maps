@@ -77,6 +77,7 @@
 
         console.log(image.naturalWidth, image.naturalHeight);
 
+        // move to mapper function
         const newGeoRefData = {
           points: [
             {
@@ -107,9 +108,6 @@
 
     const file = await loam.open(uploadedImage);
 
-    // `gdal_translate -ot Byte -of GTiff -co COMPRESS=DEFLATE -co TILED=YES -co PREDICTOR=2 -a_nodata -9999 -outsize 100% 100% -gcp 0 0 ${upperLX} ${upperLY} -gcp 600 0 ${upperRX} ${upperRY} -gcp 600 400 ${lowerRX} ${lowerRY} -gcp 0 400 ${lowerLX} ${lowerLY} -a_srs EPSG:4326 600x400.png 600x400-tr.tif`,
-
-    console.log('gcps', gcps);
     const dataset = await file.convert([
       '-of',
       'GTiff',
@@ -119,6 +117,8 @@
       'TILED=YES',
       '-co',
       'PREDICTOR=2',
+      // '-a_nodata',
+      // '-9999',
       ...gcps,
       '-a_srs',
       'EPSG:4326',
@@ -126,18 +126,29 @@
     const fileBytes1: Uint16Array = await dataset.bytes();
     console.log('1', fileBytes1);
 
-    const warpedDataset = await dataset.warp(['-of', 'GTiff', '-s_srs', 'EPSG:4326', '-t_srs', 'EPSG:3857', '-dstalpha', '-r', 'bilinear']);
+    const warpedDataset = await dataset.warp([
+      '-of',
+      'GTiff',
+      '-s_srs',
+      'EPSG:4326',
+      '-t_srs',
+      'EPSG:3857',
+      '-dstalpha',
+      '-r',
+      'cubic',
+      '-co',
+      'COMPRESS=LZW',
+      '-co',
+      'TILED=YES',
+      '-co',
+      'PREDICTOR=2',
+    ]);
+
     const fileBytes2: Uint16Array = await warpedDataset.bytes();
     console.log('2', fileBytes2);
 
-    const dataset2 = await warpedDataset.convert(['-of', 'GTiff', '-co', 'COMPRESS=LZW', '-co', 'TILED=YES', '-co', 'PREDICTOR=2']);
-
-    // const warpedDataset = await warpedDataset.transform();
-
-    const fileBytes3: Uint16Array = await dataset2.bytes();
-    console.log('3', fileBytes3);
-    const filename = dataset2.source.src.name.split('.')[0] + '.tiff';
-    const geotiffFile = new File([fileBytes3], filename, { type: 'image/tiff' });
+    const filename = warpedDataset.source.src.name.split('.')[0] + '.tiff';
+    const geotiffFile = new File([fileBytes2], filename, { type: 'image/tiff' });
     await Promise.all([
       // printGeoTiffValues(warpedDataset),
       uploadGeotiff(geotiffFile),
