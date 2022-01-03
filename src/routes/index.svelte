@@ -14,11 +14,8 @@
 </script>
 
 <script lang="ts">
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-
   import cookie from 'cookie';
   import Map from '$lib/maps/Map.svelte';
-  // import MapMarker from '$lib/maps/MapMarker.svelte';
   import { onMount } from 'svelte';
   import type { GeoRefData } from '$lib/maps/georeference';
 
@@ -30,31 +27,13 @@
   let imageInput: HTMLInputElement;
   let loadingMessage = '';
 
-  let upperLeftX;
-  let upperLeftY;
-  let lowerRightX;
-  let lowerRightY;
-  let gcps;
-
-  let geoRefData: GeoRefData = {
-    points: [
-      {
-        x: 0,
-        y: 0,
-        // SW
-        longitude: 0,
-        latitude: 0,
-      },
-      {
-        x: 600,
-        y: 400,
-        // NE
-        longitude: 6,
-        latitude: 4,
-      },
-    ],
-    bbox: [0, 0, 600, 400],
-  };
+  let upperLeftX: string;
+  let upperLeftY: string;
+  let lowerRightX: string;
+  let lowerRightY: string;
+  let gcps: string[];
+  let initLng: number = 6;
+  let initLat: number = 4;
 
   let error: string;
   let uploadedImage: File;
@@ -75,30 +54,18 @@
       image.onload = () => {
         const imageDataUrl = event.target.result as string;
 
-        console.log(image.naturalWidth, image.naturalHeight);
-
         // move to mapper function
-        const newGeoRefData = {
+        const geoRefData: GeoRefData = {
           points: [
-            {
-              x: 0,
-              y: 0,
-              // SW
-              longitude: 0,
-              latitude: 0,
-            },
-            {
-              x: image.naturalWidth,
-              y: image.naturalHeight,
-              // NE
-              longitude: 6,
-              latitude: 4,
-            },
+            // SW
+            { x: 0, y: 0, longitude: 0, latitude: 0 },
+            // NE
+            { x: image.naturalWidth, y: image.naturalHeight, longitude: initLng, latitude: initLat },
           ],
           bbox: [0, 0, image.naturalWidth, image.naturalHeight],
         };
 
-        addImageLayer('image', imageDataUrl, newGeoRefData);
+        addImageLayer('image', imageDataUrl, geoRefData);
       };
     };
   }
@@ -108,51 +75,15 @@
 
     const file = await loam.open(uploadedImage);
 
-    const dataset = await file.convert([
-      '-of',
-      'GTiff',
-      '-co',
-      'COMPRESS=LZW',
-      '-co',
-      'TILED=YES',
-      '-co',
-      'PREDICTOR=2',
-      // '-a_nodata',
-      // '-9999',
-      ...gcps,
-      '-a_srs',
-      'EPSG:4326',
-    ]);
-    const fileBytes1: Uint16Array = await dataset.bytes();
-    console.log('1', fileBytes1);
+    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', ...gcps]);
 
-    const warpedDataset = await dataset.warp([
-      '-of',
-      'GTiff',
-      '-s_srs',
-      'EPSG:4326',
-      '-t_srs',
-      'EPSG:3857',
-      '-dstalpha',
-      '-r',
-      'cubic',
-      '-co',
-      'COMPRESS=LZW',
-      '-co',
-      'TILED=YES',
-      '-co',
-      'PREDICTOR=2',
-    ]);
+    const compressionArgs = ['-co', 'COMPRESS=LZW', '-co', 'TILED=YES', '-co', 'PREDICTOR=2'];
+    const warpedDataset = await dataset.warp(['-of', 'GTiff', '-t_srs', 'EPSG:3857', '-dstalpha', '-r', 'cubic', ...compressionArgs]);
 
-    const fileBytes2: Uint16Array = await warpedDataset.bytes();
-    console.log('2', fileBytes2);
-
+    const fileBytes: Uint16Array = await warpedDataset.bytes();
     const filename = warpedDataset.source.src.name.split('.')[0] + '.tiff';
-    const geotiffFile = new File([fileBytes2], filename, { type: 'image/tiff' });
-    await Promise.all([
-      // printGeoTiffValues(warpedDataset),
-      uploadGeotiff(geotiffFile),
-    ]);
+    const geotiffFile = new File([fileBytes], filename, { type: 'image/tiff' });
+    await uploadGeotiff(geotiffFile);
   }
 
   /**
@@ -202,38 +133,6 @@
     return await getUploadResultWhenDone(id);
   }
 
-  // async function printGeoTiffValues(dataset: any) {
-  //   const [width, height, count, wkt, geoTransform] = await Promise.all([
-  //     dataset.width(),
-  //     dataset.height(),
-  //     dataset.count(),
-  //     dataset.wkt(),
-  //     dataset.transform(),
-  //   ]);
-  //   geoData.width = width;
-  //   geoData.height = height;
-  //   geoData.count = count;
-  //   geoData.wkt = wkt;
-
-  //   const cornersPx = [
-  //     [0, 0],
-  //     [width, 0],
-  //     [width, height],
-  //     [0, height],
-  //   ];
-
-  //   // https://gdal.org/user/raster_data_model.html#affine-geotransform
-  //   const cornersGeo = cornersPx.map(([x, y]) => {
-  //     return [geoTransform[0] + geoTransform[1] * x + geoTransform[2] * y, geoTransform[3] + geoTransform[4] * x + geoTransform[5] * y];
-  //   });
-
-  //   const cornersLngLat = await loam.reproject(wkt, EPSG3857, cornersGeo);
-  //   cornersLngLat.forEach(([lng, lat], i: number) => {
-  //     geoData.coordinaties +=
-  //       '(' + cornersGeo[i][0].toString() + ', ' + cornersGeo[i][1].toString() + ') (' + lng.toString() + ', ' + lat.toString() + ')\n';
-  //   });
-  // }
-
   function addImageLayer(id: string, imageDataUrl: string, geoRefData: GeoRefData) {
     const posInfo = map.getPositionInfo(geoRefData);
     upperLeftX = posInfo[0][0].toString();
@@ -243,11 +142,7 @@
 
     map.addLayer(
       id,
-      {
-        type: 'image',
-        url: `${imageDataUrl}`,
-        coordinates: map.getPositionInfo(geoRefData),
-      },
+      { type: 'image', url: `${imageDataUrl}`, coordinates: map.getPositionInfo(geoRefData) },
       { id, type: 'raster', source: id, paint: { 'raster-fade-duration': 0 } },
     );
 
@@ -274,8 +169,12 @@
 <div class="flex gap-4 p-4">
   <div>
     <h1 class="text-4xl">Maps</h1>
-    <button on:click={getLatestTileset} type="button" class="p-1 bg-gray-300 border rounded-md">Get latest tileset</button>
+    <h4>set initial longlat</h4>
+    <input type="number" bind:value={initLng} />
+    <input type="number" bind:value={initLat} />
     <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
+
+    <button on:click={getLatestTileset} type="button" class="p-1 bg-gray-300 border rounded-md">Get latest tileset</button>
     <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={imageInput} />
   </div>
 
@@ -307,7 +206,7 @@
   {/if}
 </div>
 
-<Map lat={35} lon={-84} zoom={3.5} bind:this={map} bind:upperLeftX bind:upperLeftY bind:lowerRightX bind:lowerRightY bind:gcps>
+<Map bind:this={map} bind:upperLeftX bind:upperLeftY bind:lowerRightX bind:lowerRightY bind:gcps>
   <!-- <MapMarker lat={37.8225} lon={-122.0024} label="Svelte Body Shaping" />
   <MapMarker lat={29.723} lon={-95.4189} label="Svelte Waxing Studio" />
   <MapMarker lat={28.3378} lon={-81.3966} label="Svelte 30 Nutritional Consultants" />

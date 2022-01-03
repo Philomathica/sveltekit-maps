@@ -9,14 +9,12 @@
     getMap: () => map,
   });
 
-  export let zoom: number;
-
   export let upperLeftX: string;
   export let upperLeftY: string;
   export let lowerRightX: string;
   export let lowerRightY: string;
 
-  export let gcps: string | number[];
+  export let gcps: string[];
 
   let container: HTMLElement;
   let map: mapbox.Map;
@@ -31,7 +29,7 @@
         container,
         style: 'mapbox://styles/mapbox/streets-v9',
         center: [0, 0],
-        zoom,
+        zoom: 3.5,
       });
     };
 
@@ -150,11 +148,6 @@
       lowerLY,
     ];
 
-    console.log('posInfo', posInfo);
-    console.log(
-      `gdal_translate -ot Byte -of GTiff -co COMPRESS=DEFLATE -co TILED=YES -co PREDICTOR=2 -a_nodata -9999 -outsize 100% 100% -gcp 0 0 ${upperLX} ${upperLY} -gcp 600 0 ${upperRX} ${upperRY} -gcp 600 400 ${lowerRX} ${lowerRY} -gcp 0 400 ${lowerLX} ${lowerLY} -a_srs EPSG:4326 600x400.png 600x400-tr.tif`,
-    );
-
     const helperPoints = {
       type: 'FeatureCollection',
       features: [
@@ -245,8 +238,6 @@
     const bboxP2 = [bounds.getEast(), bounds.getNorth()];
     const bboxP3 = [bounds.getEast(), bounds.getSouth()];
     const bboxP4 = [bounds.getWest(), bounds.getSouth()];
-
-    console.log('bbox:', bboxP1, bboxP2, bboxP3, bboxP4);
 
     const bboxPoints = {
       type: 'FeatureCollection',
