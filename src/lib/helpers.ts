@@ -31,7 +31,7 @@ export function setGeoRefData(width: number, height: number, sw: mapbox.LngLatLi
   };
 }
 
-export function getPositionInfo(georefData: GeoRefData): number[][] {
+export function getPositionInfo(georefData: GeoRefData): mapbox.LngLatLike[] {
   return [
     latLngToLngLat(projectPointForGeoreference([georefData.bbox[0], georefData.bbox[3]], georefData)),
     latLngToLngLat(projectPointForGeoreference([georefData.bbox[2], georefData.bbox[3]], georefData)),
@@ -87,7 +87,7 @@ export function getBoundingboxFeatures(points: mapbox.LngLatLike[]): GeoJSON.Fea
   };
 }
 
-export function getMarkersPosInfo(markerBL: mapbox.Marker, markerTR: mapbox.Marker, georefData: GeoRefData): number[][] {
+export function getMarkersPosInfo(markerBL: mapbox.Marker, markerTR: mapbox.Marker, georefData: GeoRefData): mapbox.LngLatLike[] {
   const { lng: lngBL, lat: latBL } = markerBL.getLngLat();
   const { lng: lngTR, lat: latTR } = markerTR.getLngLat();
   const newGeoRefData = {
