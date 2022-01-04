@@ -1,6 +1,6 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  import { onMount, setContext } from 'svelte';
+  import { onDestroy, onMount, setContext } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
 
   import type { GeoRefData } from '$lib/helpers/georeference';
@@ -11,47 +11,17 @@
     getMap: () => map,
   });
 
-  export let gcps: string[];
-  export let map: mapbox.Map;
+  export let gcps: string[] = [];
 
+  let map: mapbox.Map;
   let container: HTMLElement;
 
-  onMount(() => {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/mapbox-gl/dist/mapbox-gl.css';
-
-    link.onload = () => {
-      map = new mapbox.Map({
-        container,
-        style: 'mapbox://styles/mapbox/streets-v9',
-        center: [0, 0],
-        zoom: 3.5,
-      });
-    };
-
-    document.head.appendChild(link);
-
-    return () => {
-      map.remove();
-      link.parentNode.removeChild(link);
-    };
-  });
-
   export function dragImage(sourceId: string, georefData: GeoRefData) {
-    const markerBL = new mapbox.Marker({
-      draggable: true,
-      anchor: 'bottom',
-      offset: [0, 0] as mapbox.PointLike,
-    })
+    const markerBL = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
       .setLngLat(new mapbox.LngLat(georefData.points[0].longitude, georefData.points[0].latitude))
       .addTo(map);
 
-    const markerTR = new mapbox.Marker({
-      draggable: true,
-      anchor: 'bottom',
-      offset: [0, 0] as mapbox.PointLike,
-    })
+    const markerTR = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
       .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
       .addTo(map);
 
@@ -75,6 +45,25 @@
       updateGCPs(posInfo, georefData);
     });
   }
+
+  export function getMapInstance() {
+    return map;
+  }
+
+  onMount(async () => {
+    map = new mapbox.Map({
+      container,
+      style: 'mapbox://styles/mapbox/streets-v9',
+      center: [0, 0],
+      zoom: 3.5,
+    });
+  });
+
+  onDestroy(() => {
+    if (map) {
+      map.remove();
+    }
+  });
 
   function updateGCPs(posInfo: any, georefData: GeoRefData) {
     if (!posInfo) {
@@ -186,6 +175,10 @@
     }
   }
 </script>
+
+<svelte:head>
+  <link rel="stylesheet" href="https://unpkg.com/mapbox-gl/dist/mapbox-gl.css" />
+</svelte:head>
 
 <div class="w-full h-full" bind:this={container}>
   {#if map}

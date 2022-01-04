@@ -1,3 +1,13 @@
+export function convertFileToImage(image: File, callback: (image: HTMLImageElement) => void) {
+  const reader = new FileReader();
+  reader.readAsDataURL(image);
+  reader.onload = (event: ProgressEvent<FileReader>) => {
+    const img = new Image();
+    img.src = event.target.result as string;
+    img.onload = () => callback(img);
+  };
+}
+
 export async function convertImageToGeoTiff(image: File, gcps: string[]) {
   const loam = await import('loam');
   const file = await loam.open(image);
