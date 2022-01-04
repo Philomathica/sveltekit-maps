@@ -15,55 +15,57 @@
 
 <script lang="ts">
   import cookie from 'cookie';
-  import Map from '$lib/maps/Map.svelte';
+  import type mapbox from 'mapbox-gl';
   import { onMount } from 'svelte';
 
-  import { convertImageToGeoTiff, setGeoRefData, getPositionInfo } from '$lib/helpers';
-  import type mapboxgl from 'mapbox-gl';
+  import Map from '$lib/maps/Map.svelte';
+  import { convertImageToGeoTiff } from '$lib/helpers/gdal';
+  import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
 
   export let signedUrl: string;
   export let fileUrl: string;
 
   let loam: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-  let map: Map;
+  let mapComponent: Map;
+  let map: mapbox.Map;
   let imageInput: HTMLInputElement;
   let loadingMessage = '';
-
   let gcps: string[];
   let initLng = 6;
   let initLat = 4;
-
   let error: string;
   let uploadedImage: File;
 
   onMount(async () => {
     loam = await import('loam');
     loam.initialize(window.location.origin);
+
+    return () => loam.reset();
   });
 
-  function onImageSelected(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+  function initMap(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     uploadedImage = event.currentTarget.files[0];
 
+    const setupLayer = (image: HTMLImageElement) => {
+      // todo extract from bbox of venue
+      const sw: mapbox.LngLatLike = [0, 0];
+      const ne: mapbox.LngLatLike = [initLng, initLat];
+      const geoRefData = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
+
+      map.addSource('id', { type: 'image', url: image.src, coordinates: getPositionInfo(geoRefData) });
+      map.addLayer({ id: 'id', type: 'raster', source: 'id', paint: { 'raster-fade-duration': 0 } });
+      mapComponent.dragImage('id', geoRefData);
+    };
+    convertFileToImage(uploadedImage, setupLayer);
+  }
+
+  function convertFileToImage(image: File, callback: (image: HTMLImageElement) => void) {
     let reader = new FileReader();
-    reader.readAsDataURL(uploadedImage);
-    reader.onload = async (event: ProgressEvent<FileReader>) => {
-      const image = new Image();
-      image.src = event.target.result as string;
-      image.onload = () => {
-        const imageDataUrl = event.target.result as string;
-
-        // todo extract from bbox of venue
-        const sw: mapboxgl.LngLatLike = [0, 0];
-        const ne: mapboxgl.LngLatLike = [initLng, initLat];
-        const geoRefData = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
-
-        map.addSourceWithLayer(
-          'id',
-          { type: 'image', url: `${imageDataUrl}`, coordinates: getPositionInfo(geoRefData) },
-          { id: 'id', type: 'raster', source: 'id', paint: { 'raster-fade-duration': 0 } },
-        );
-        map.dragImage('id', geoRefData);
-      };
+    reader.readAsDataURL(image);
+    reader.onload = (event: ProgressEvent<FileReader>) => {
+      const img = new Image();
+      img.src = event.target.result as string;
+      img.onload = () => callback(img);
     };
   }
 
@@ -121,8 +123,8 @@
   }
 
   function getCustomImageTileset(tileset: string): void {
-    map.addSourceWithLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: tileset, type: 'raster', source: tileset });
-    // map.flyTo([+upperLeftX, +upperLeftY]);
+    map.addSource(tileset, { type: 'raster', url: `mapbox://${tileset}` });
+    map.addLayer({ id: tileset, type: 'raster', source: tileset });
   }
 
   function getLatestTileset() {
@@ -141,16 +143,16 @@
   <div>
     <h1 class="text-4xl">Maps</h1>
     <h4>set initial longlat</h4>
-    <input type="number" bind:value={initLng} />
-    <input type="number" bind:value={initLat} />
-    <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
-
+    <input type="number" class="border-2" bind:value={initLng} />
+    <input type="number" class="border-2" bind:value={initLat} />
     <button on:click={getLatestTileset} type="button" class="p-1 bg-gray-300 border rounded-md">Get latest tileset</button>
-    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => onImageSelected(e)} bind:this={imageInput} />
-  </div>
 
-  <div class="flex flex-col items-center justify-center p-1 border cursor-pointer w-max">
-    <button on:click={() => onConvertToGeotiffSelected()} type="button" class="p-1 bg-gray-300 border rounded-md">Convert image to Geotiff</button>
+    <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
+    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => initMap(e)} bind:this={imageInput} />
+
+    <button disabled={!gcps?.length} on:click={() => onConvertToGeotiffSelected()} type="button" class="p-1 bg-gray-300 border rounded-md">
+      Convert image to Geotiff
+    </button>
   </div>
 
   {#if loadingMessage}
@@ -161,4 +163,4 @@
   {/if}
 </div>
 
-<Map bind:this={map} bind:gcps />
+<Map bind:this={mapComponent} bind:map bind:gcps />

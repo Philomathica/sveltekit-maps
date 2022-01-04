@@ -3,18 +3,18 @@
   import { onMount, setContext } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
 
-  import type { GeoRefData } from '../georeference';
+  import type { GeoRefData } from '$lib/helpers/georeference';
 
-  import { getMarkersPosInfo, gcpsToFeatureCollection, getBoundingboxFeatures } from '$lib/helpers';
+  import { getMarkersPosInfo, gcpsToFeatureCollection, getBoundingboxFeatures } from '$lib/helpers/mapbox';
 
   setContext<MapboxContext>(key, {
     getMap: () => map,
   });
 
   export let gcps: string[];
+  export let map: mapbox.Map;
 
   let container: HTMLElement;
-  let map: mapbox.Map;
 
   onMount(() => {
     const link = document.createElement('link');
@@ -37,15 +37,6 @@
       link.parentNode.removeChild(link);
     };
   });
-
-  export function addSourceWithLayer(sourceId: string, source: mapbox.AnySourceData, layer: mapbox.AnyLayer) {
-    map.addSource(sourceId, source);
-    map.addLayer(layer);
-  }
-
-  export function flyTo(center: mapbox.LngLatLike, zoom = 7) {
-    map.flyTo({ center, zoom });
-  }
 
   export function dragImage(sourceId: string, georefData: GeoRefData) {
     const markerBL = new mapbox.Marker({
