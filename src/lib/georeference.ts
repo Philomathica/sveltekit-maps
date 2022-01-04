@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import * as _ from 'lodash';
+import { cloneDeep, map } from 'lodash';
 import SphericalMercator from '@mapbox/sphericalmercator';
 
 export interface GeoRefData {
@@ -19,15 +19,15 @@ const merc = new SphericalMercator({
   size: 256,
 });
 
-function getPerpendicular(vector) {
+function getPerpendicular(vector: any) {
   return [vector[1], -vector[0]];
 }
 
-function length(vector) {
+function length(vector: any) {
   return Math.hypot(vector[0], vector[1]);
 }
 
-function scalarProduct(a, b) {
+function scalarProduct(a: any, b: any) {
   return a[0] * b[0] + a[1] * b[1];
 }
 
@@ -36,17 +36,17 @@ function scalarProduct(a, b) {
 // }
 
 // a + b
-function add(a, b) {
+function add(a: any, b: any) {
   return [a[0] + b[0], a[1] + b[1]];
 }
 
 // a - b
-function subtract(a, b) {
+function subtract(a: any, b: any) {
   return [a[0] - b[0], a[1] - b[1]];
 }
 
 // scalar * vector
-function multiplyBy(vector, scalar) {
+function multiplyBy(vector: any, scalar: any) {
   return [vector[0] * scalar, vector[1] * scalar];
 }
 
@@ -67,7 +67,7 @@ export function projectPointForGeoreference(point: number[], georeference: GeoRe
   const pxLatLng1 = merc.forward([latLng1[1], latLng1[0]]); //merc is working in lng/lat
   const pxLatLng2 = merc.forward([latLng2[1], latLng2[0]]); //merc is working in lng/lat
 
-  const pxLatLng0 = add(
+  const pxLatLng0: any = add(
     add(pxLatLng1, multiplyBy(subtract(pxLatLng2, pxLatLng1), projectParallel)),
     multiplyBy(getPerpendicular(subtract(pxLatLng2, pxLatLng1)), projectPerpendicular),
   );
@@ -76,15 +76,15 @@ export function projectPointForGeoreference(point: number[], georeference: GeoRe
   return [latLng0[1], latLng0[0]];
 }
 
-export function projectFeatureForGeoreference(feature, georeference: GeoRefData): any {
-  const _feature = _.cloneDeep(feature);
+export function projectFeatureForGeoreference(feature: any, georeference: GeoRefData): any {
+  const _feature = cloneDeep(feature);
 
   if (_feature.geometry.type === 'Point') {
     const projectedPoint = projectPointForGeoreference(_feature.geometry.coordinates, georeference);
     _feature.geometry.coordinates = [projectedPoint[1], projectedPoint[0]]; //GeoJSON is lng/lat
   } else if (_feature.geometry.type === 'Polygon') {
-    _feature.geometry.coordinates = _.map(_feature.geometry.coordinates, function (innerPolygon) {
-      return _.map(innerPolygon, function (point) {
+    _feature.geometry.coordinates = map(_feature.geometry.coordinates, function (innerPolygon) {
+      return map(innerPolygon, function (point) {
         const projectedPoint = projectPointForGeoreference(point, georeference);
         return [projectedPoint[1], projectedPoint[0]]; //GeoJSON is lng/lat
       });
@@ -98,7 +98,7 @@ export function projectFeatureForGeoreference(feature, georeference: GeoRefData)
   return _feature;
 }
 
-export function unprojectLatLngForGeoreference(latLng, georeference: GeoRefData): any {
+export function unprojectLatLngForGeoreference(latLng: any, georeference: GeoRefData): any {
   const latLng0 = latLng;
   const point1 = [georeference.points[0].x, georeference.points[0].y];
   const point2 = [georeference.points[1].x, georeference.points[1].y];
@@ -125,15 +125,15 @@ export function unprojectLatLngForGeoreference(latLng, georeference: GeoRefData)
   return point0;
 }
 
-export function unprojectFeatureForGeoreference(feature, georeference: GeoRefData): any {
-  const _feature = _.cloneDeep(feature);
+export function unprojectFeatureForGeoreference(feature: any, georeference: GeoRefData): any {
+  const _feature = cloneDeep(feature);
 
   if (_feature.geometry.type === 'Point') {
     const projectedPoint = unprojectLatLngForGeoreference([_feature.geometry.coordinates[1], _feature.geometry.coordinates[0]], georeference);
     _feature.geometry.coordinates = [projectedPoint[1], projectedPoint[0]]; //GeoJSON is lng/lat
   } else if (_feature.geometry.type === 'Polygon') {
-    _feature.geometry.coordinates = _.map(_feature.geometry.coordinates, function (innerPolygon) {
-      return _.map(innerPolygon, (point: any) => {
+    _feature.geometry.coordinates = map(_feature.geometry.coordinates, function (innerPolygon) {
+      return map(innerPolygon, (point: any) => {
         const projectedPoint = unprojectLatLngForGeoreference([point[1], point[0]], georeference); //GeoJSON is lng/lat
         return projectedPoint;
       });
@@ -145,4 +145,8 @@ export function unprojectFeatureForGeoreference(feature, georeference: GeoRefDat
   }
 
   return _feature;
+}
+
+export function latLngToLngLat(t: any): any {
+  return [t[1], t[0]];
 }

@@ -17,23 +17,21 @@
   import cookie from 'cookie';
   import Map from '$lib/maps/Map.svelte';
   import { onMount } from 'svelte';
-  import type { GeoRefData } from '$lib/maps/georeference';
+
+  import { convertImageToGeoTiff, setGeoRefData, getPositionInfo } from '$lib/helpers';
+  import type mapboxgl from 'mapbox-gl';
 
   export let signedUrl: string;
   export let fileUrl: string;
 
-  let loam: any;
+  let loam: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   let map: Map;
   let imageInput: HTMLInputElement;
   let loadingMessage = '';
 
-  let upperLeftX: string;
-  let upperLeftY: string;
-  let lowerRightX: string;
-  let lowerRightY: string;
   let gcps: string[];
-  let initLng: number = 6;
-  let initLat: number = 4;
+  let initLng = 6;
+  let initLat = 4;
 
   let error: string;
   let uploadedImage: File;
@@ -54,35 +52,24 @@
       image.onload = () => {
         const imageDataUrl = event.target.result as string;
 
-        // move to mapper function
-        const geoRefData: GeoRefData = {
-          points: [
-            // SW
-            { x: 0, y: 0, longitude: 0, latitude: 0 },
-            // NE
-            { x: image.naturalWidth, y: image.naturalHeight, longitude: initLng, latitude: initLat },
-          ],
-          bbox: [0, 0, image.naturalWidth, image.naturalHeight],
-        };
+        // todo extract from bbox of venue
+        const sw: mapboxgl.LngLatLike = [0, 0];
+        const ne: mapboxgl.LngLatLike = [initLng, initLat];
+        const geoRefData = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
 
-        addImageLayer('image', imageDataUrl, geoRefData);
+        map.addSourceWithLayer(
+          'id',
+          { type: 'image', url: `${imageDataUrl}`, coordinates: getPositionInfo(geoRefData) },
+          { id: 'id', type: 'raster', source: 'id', paint: { 'raster-fade-duration': 0 } },
+        );
+        map.dragImage('id', geoRefData);
       };
     };
   }
 
   async function onConvertToGeotiffSelected() {
     loadingMessage = 'Converting to GeoTIFF...';
-
-    const file = await loam.open(uploadedImage);
-
-    const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', ...gcps]);
-
-    const compressionArgs = ['-co', 'COMPRESS=LZW', '-co', 'TILED=YES', '-co', 'PREDICTOR=2'];
-    const warpedDataset = await dataset.warp(['-of', 'GTiff', '-t_srs', 'EPSG:3857', '-dstalpha', '-r', 'cubic', ...compressionArgs]);
-
-    const fileBytes: Uint16Array = await warpedDataset.bytes();
-    const filename = warpedDataset.source.src.name.split('.')[0] + '.tiff';
-    const geotiffFile = new File([fileBytes], filename, { type: 'image/tiff' });
+    const geotiffFile = await convertImageToGeoTiff(uploadedImage, gcps);
     await uploadGeotiff(geotiffFile);
   }
 
@@ -133,25 +120,9 @@
     return await getUploadResultWhenDone(id);
   }
 
-  function addImageLayer(id: string, imageDataUrl: string, geoRefData: GeoRefData) {
-    const posInfo = map.getPositionInfo(geoRefData);
-    upperLeftX = posInfo[0][0].toString();
-    upperLeftY = posInfo[0][1].toString();
-    lowerRightX = posInfo[2][0].toString();
-    lowerRightY = posInfo[2][1].toString();
-
-    map.addLayer(
-      id,
-      { type: 'image', url: `${imageDataUrl}`, coordinates: map.getPositionInfo(geoRefData) },
-      { id, type: 'raster', source: id, paint: { 'raster-fade-duration': 0 } },
-    );
-
-    map.dragImage(id, id, geoRefData);
-  }
-
   function getCustomImageTileset(tileset: string): void {
-    map.addLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: tileset, type: 'raster', source: tileset });
-    map.goToLocation([+upperLeftX, +upperLeftY], false, 7.12);
+    map.addSourceWithLayer(tileset, { type: 'raster', url: `mapbox://${tileset}` }, { id: tileset, type: 'raster', source: tileset });
+    // map.flyTo([+upperLeftX, +upperLeftY]);
   }
 
   function getLatestTileset() {
@@ -180,22 +151,6 @@
 
   <div class="flex flex-col items-center justify-center p-1 border cursor-pointer w-max">
     <button on:click={() => onConvertToGeotiffSelected()} type="button" class="p-1 bg-gray-300 border rounded-md">Convert image to Geotiff</button>
-    <label>
-      image upperLeftX
-      <input type="text" class="p-1 border mt-1" bind:value={upperLeftX} />
-    </label>
-    <label>
-      image upperLeftY
-      <input type="text" class="p-1 border mt-1" bind:value={upperLeftY} />
-    </label>
-    <label>
-      image lowerRightX
-      <input type="text" class="p-1 border mt-1" bind:value={lowerRightX} />
-    </label>
-    <label>
-      image lowerRightY
-      <input type="text" class="p-1 border mt-1" bind:value={lowerRightY} />
-    </label>
   </div>
 
   {#if loadingMessage}
@@ -206,10 +161,4 @@
   {/if}
 </div>
 
-<Map bind:this={map} bind:upperLeftX bind:upperLeftY bind:lowerRightX bind:lowerRightY bind:gcps>
-  <!-- <MapMarker lat={37.8225} lon={-122.0024} label="Svelte Body Shaping" />
-  <MapMarker lat={29.723} lon={-95.4189} label="Svelte Waxing Studio" />
-  <MapMarker lat={28.3378} lon={-81.3966} label="Svelte 30 Nutritional Consultants" />
-  <MapMarker lat={40.6483} lon={-74.0237} label="Svelte Brands LLC" />
-  <MapMarker lat={40.6986} lon={-74.41} label="Svelte Medical Systems" /> -->
-</Map>
+<Map bind:this={map} bind:gcps />

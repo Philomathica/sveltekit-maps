@@ -1,18 +1,15 @@
 <script lang="ts">
-  import type { ImageSource, PointLike } from 'mapbox-gl';
-
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   import { onMount, setContext } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
-  import { projectPointForGeoreference, GeoRefData } from './georeference';
+
+  import type { GeoRefData } from '../georeference';
+
+  import { getMarkersPosInfo, gcpsToFeatureCollection, getBoundingboxFeatures } from '$lib/helpers';
 
   setContext<MapboxContext>(key, {
     getMap: () => map,
   });
-
-  export let upperLeftX: string;
-  export let upperLeftY: string;
-  export let lowerRightX: string;
-  export let lowerRightY: string;
 
   export let gcps: string[];
 
@@ -41,77 +38,54 @@
     };
   });
 
-  export function goToLocation(lngLat: mapbox.LngLatLike, addMarker = false, zoom = 20) {
-    const popup = new mapbox.Popup({ offset: 25 }).setText('hi');
-    if (addMarker) {
-      new mapbox.Marker().setLngLat(lngLat).setPopup(popup).addTo(map);
-    }
-    map.flyTo({ center: lngLat, zoom });
-  }
-
-  export function addLayer(sourceId: string, source: mapbox.AnySourceData, layer: mapbox.AnyLayer) {
+  export function addSourceWithLayer(sourceId: string, source: mapbox.AnySourceData, layer: mapbox.AnyLayer) {
     map.addSource(sourceId, source);
     map.addLayer(layer);
   }
 
-  export function dragImage(sourceId: string, layerId: string, georefData: GeoRefData) {
-    const markerElBL = document.createElement('div');
-    markerElBL.style.cssText = 'width: 10px; height: 10px; background: #f00';
+  export function flyTo(center: mapbox.LngLatLike, zoom = 7) {
+    map.flyTo({ center, zoom });
+  }
 
+  export function dragImage(sourceId: string, georefData: GeoRefData) {
     const markerBL = new mapbox.Marker({
-      // element: markerElBL,
       draggable: true,
       anchor: 'bottom',
-      offset: [0, 0] as PointLike,
+      offset: [0, 0] as mapbox.PointLike,
     })
       .setLngLat(new mapbox.LngLat(georefData.points[0].longitude, georefData.points[0].latitude))
       .addTo(map);
 
-    const markerElTopR = document.createElement('div');
-    markerElTopR.style.cssText = 'width: 10px; height: 10px; background: #00f';
-
     const markerTR = new mapbox.Marker({
-      // element: markerElTopR,
       draggable: true,
       anchor: 'bottom',
-      offset: [0, 0] as PointLike,
+      offset: [0, 0] as mapbox.PointLike,
     })
       .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
       .addTo(map);
 
-    // const canvas = map.getCanvasContainer();
-
     markerBL.on('drag', () => {
       const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-      (map.getSource(sourceId) as ImageSource).setCoordinates(posInfo);
+      (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(posInfo);
     });
 
     markerTR.on('drag', () => {
       const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-      (map.getSource(sourceId) as ImageSource).setCoordinates(posInfo);
+      (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(posInfo);
     });
 
     markerBL.on('dragend', () => {
       const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-      upperLeftX = posInfo[0][0].toString();
-      upperLeftY = posInfo[0][1].toString();
-      lowerRightX = posInfo[2][0].toString();
-      lowerRightY = posInfo[2][1].toString();
-
-      updatePointsSource(posInfo, georefData);
+      updateGCPs(posInfo, georefData);
     });
 
     markerTR.on('dragend', () => {
       const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-      upperLeftX = posInfo[0][0].toString();
-      upperLeftY = posInfo[0][1].toString();
-      lowerRightX = posInfo[2][0].toString();
-      lowerRightY = posInfo[2][1].toString();
-      updatePointsSource(posInfo, georefData);
+      updateGCPs(posInfo, georefData);
     });
   }
 
-  function updatePointsSource(posInfo, georefData: GeoRefData) {
+  function updateGCPs(posInfo: any, georefData: GeoRefData) {
     if (!posInfo) {
       return;
     }
@@ -124,6 +98,13 @@
     const lowerRY = posInfo[2][1].toString();
     const lowerLX = posInfo[3][0].toString();
     const lowerLY = posInfo[3][1].toString();
+
+    const cornerPoints: mapbox.LngLatLike[] = [
+      [+upperLX, +upperLY], // 1
+      [+upperRX, +upperRY], // 2
+      [+lowerRX, +lowerRY], // 3
+      [+lowerLX, +lowerLY], // 4
+    ];
 
     gcps = [
       '-gcp',
@@ -148,47 +129,7 @@
       lowerLY,
     ];
 
-    const helperPoints = {
-      type: 'FeatureCollection',
-      features: [
-        // NW (initial pos)
-        {
-          type: 'Feature',
-          properties: { description: '1' },
-          geometry: {
-            type: 'Point',
-            coordinates: [+upperLX, +upperLY],
-          },
-        },
-        // NE (initial pos)
-        {
-          type: 'Feature',
-          properties: { description: '2' },
-          geometry: {
-            type: 'Point',
-            coordinates: [+upperRX, +upperRY],
-          },
-        },
-        // SE (initial pos)
-        {
-          type: 'Feature',
-          properties: { description: '3' },
-          geometry: {
-            type: 'Point',
-            coordinates: [+lowerRX, +lowerRY],
-          },
-        },
-        // SW (initial pos)
-        {
-          type: 'Feature',
-          properties: { description: '4' },
-          geometry: {
-            type: 'Point',
-            coordinates: [+lowerLX, +lowerLY],
-          },
-        },
-      ],
-    };
+    const helperPoints = gcpsToFeatureCollection(upperLX, upperLY, upperRX, upperRY, lowerRX, lowerRY, lowerLX, lowerLY);
 
     if (!map.getSource('pointSource')) {
       map.addSource('pointSource', {
@@ -227,64 +168,15 @@
     }
 
     // Draw bounding box
-    const c = [
-      [+upperLX, +upperLY], // 1
-      [+upperRX, +upperRY], // 2
-      [+lowerRX, +lowerRY], // 3
-      [+lowerLX, +lowerLY], // 4
-    ];
-    const bounds = c.reduce((r, a) => r.extend(a as any), new mapbox.LngLatBounds(c[0] as any, c[0] as any));
-    const bboxP1 = [bounds.getWest(), bounds.getNorth()];
-    const bboxP2 = [bounds.getEast(), bounds.getNorth()];
-    const bboxP3 = [bounds.getEast(), bounds.getSouth()];
-    const bboxP4 = [bounds.getWest(), bounds.getSouth()];
-
-    const bboxPoints = {
-      type: 'FeatureCollection',
-      features: [
-        // NW (initial pos)
-        {
-          type: 'Feature',
-          properties: { description: '1' },
-          geometry: {
-            type: 'Point',
-            coordinates: bboxP1,
-          },
-        },
-        {
-          type: 'Feature',
-          properties: { description: '2' },
-          geometry: {
-            type: 'Point',
-            coordinates: bboxP2,
-          },
-        },
-        {
-          type: 'Feature',
-          properties: { description: '3' },
-          geometry: {
-            type: 'Point',
-            coordinates: bboxP3,
-          },
-        },
-        {
-          type: 'Feature',
-          properties: { description: '4' },
-          geometry: {
-            type: 'Point',
-            coordinates: bboxP4,
-          },
-        },
-      ],
-    };
+    const bboxFeatureCollection = getBoundingboxFeatures(cornerPoints);
 
     if (!map.getSource('bboxSource')) {
       map.addSource('bboxSource', {
         type: 'geojson',
-        data: bboxPoints as any,
+        data: bboxFeatureCollection as any,
       });
     } else {
-      (map.getSource('bboxSource') as any).setData(bboxPoints);
+      (map.getSource('bboxSource') as any).setData(bboxFeatureCollection);
     }
 
     if (!map.getLayer('bboxLayer')) {
@@ -301,45 +193,6 @@
         },
       });
     }
-  }
-
-  export function getPositionInfo(georefData: GeoRefData): number[][] {
-    return [
-      latLngToLngLat(projectPointForGeoreference([georefData.bbox[0], georefData.bbox[3]], georefData)),
-      latLngToLngLat(projectPointForGeoreference([georefData.bbox[2], georefData.bbox[3]], georefData)),
-      latLngToLngLat(projectPointForGeoreference([georefData.bbox[2], georefData.bbox[1]], georefData)),
-      latLngToLngLat(projectPointForGeoreference([georefData.bbox[0], georefData.bbox[1]], georefData)),
-    ];
-  }
-
-  export function getMarkersPosInfo(markerBL: mapbox.Marker, markerTR: mapbox.Marker, georefData: GeoRefData): number[][] {
-    const { lng: lngBL, lat: latBL } = markerBL.getLngLat();
-    const { lng: lngTR, lat: latTR } = markerTR.getLngLat();
-    const newGeoRefData = {
-      points: [
-        {
-          x: 0,
-          y: 0,
-          // SW
-          longitude: lngBL,
-          latitude: latBL,
-        },
-        {
-          x: georefData.bbox[2], // width,
-          y: georefData.bbox[3], // height,
-          // NE
-          longitude: lngTR,
-          latitude: latTR,
-        },
-      ],
-      bbox: georefData.bbox,
-    };
-
-    return getPositionInfo(newGeoRefData);
-  }
-
-  export function latLngToLngLat(t): any {
-    return [t[1], t[0]];
   }
 </script>
 
