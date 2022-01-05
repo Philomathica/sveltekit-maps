@@ -17,7 +17,7 @@ export async function convertImageToGeoTiff(image: File, gcps: string[]) {
 
   const compressionArgs = ['-co', 'COMPRESS=LZW', '-co', 'TILED=YES', '-co', 'PREDICTOR=2'];
   const srcAlpha = image.type === 'image/png' ? ['-srcalpha'] : [];
-  const warpedDataset = await dataset.warp(['-of', 'GTiff', '-t_srs', 'EPSG:3857', '-dstalpha',  '-r', 'bilinear', ...compressionArgs, ...srcAlpha]);
+  const warpedDataset = await dataset.warp(['-of', 'GTiff', '-t_srs', 'EPSG:3857', '-dstalpha', '-r', 'bilinear', ...compressionArgs, ...srcAlpha]);
 
   const fileBytes: Uint16Array = await warpedDataset.bytes();
   const filename = warpedDataset.source.src.name.split('.')[0] + '.tiff';

@@ -5,14 +5,14 @@
   import { goto } from '$app/navigation';
   import { browser } from '$app/env';
 
-  export const load: Load = async ({ page }) => {
-    if (page.params.id === 'new') {
+  export const load: Load = async ({ params }) => {
+    if (params.id === 'new') {
       return { props: { floor: emptyFloor } };
     }
 
     if (browser) {
       const floors: FloorLevel[] = window.localStorage.getItem('floor') ? JSON.parse(window.localStorage.getItem('floor')) : [];
-      const floor = floors.find(floor => floor.id === page.params.id);
+      const floor = floors.find(floor => floor.id === params.id);
 
       return floor ? { props: { floor } } : goto('/');
     }
