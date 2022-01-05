@@ -24,8 +24,8 @@
     "patch-package": "^6.4.7"
   },
   "devDependencies": {
-    "@sveltejs/adapter-netlify": "^1.0.0-next.37",
-    "@sveltejs/kit": "^1.0.0-next.216",
+    "@sveltejs/adapter-auto": "next",
+    "@sveltejs/kit": "next",
     "@types/mapbox__mapbox-sdk": "^0.13.2",
     "@types/mapbox__sphericalmercator": "^1.1.5",
     "@types/mapbox-gl": "^2.6.0",

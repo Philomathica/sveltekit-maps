@@ -3,7 +3,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { mapbox } from '$lib/variables';
 import type { RequestHandler } from '@sveltejs/kit';
 import { customAlphabet } from 'nanoid';
-import * as nanoidDictionary from 'nanoid-dictionary';
+import nanoidDictionary from 'nanoid-dictionary';
 import type { Locals } from '$lib/types';
 
 /**

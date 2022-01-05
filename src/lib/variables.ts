@@ -8,7 +8,7 @@ export const mapbox = {
   username: getServerEnvVar('MAPBOX_USERNAME'),
 };
 
-function getServerEnvVar(key: keyof typeof process.env) {
+function getServerEnvVar(key: keyof NodeJS.ProcessEnv) {
   if (browser) {
     return;
   }
