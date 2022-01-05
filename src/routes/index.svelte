@@ -11,11 +11,6 @@
 
   onMount(async () => {
     floors = window.localStorage.getItem('floors') ? JSON.parse(window.localStorage.getItem('floors')) : [];
-
-    const loam = await import('loam');
-    loam.initialize(window.location.origin);
-
-    return () => loam.reset();
   });
 </script>
 

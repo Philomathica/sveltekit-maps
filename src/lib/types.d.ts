@@ -2,9 +2,8 @@
  * Can be made globally available by placing this
  * inside `global.d.ts` and removing `export` keyword
  */
-export interface Locals {
-  tileset?: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface Locals {}
 
 export interface Point {
   x: number;

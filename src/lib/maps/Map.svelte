@@ -1,11 +1,13 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  import { onDestroy, onMount, setContext } from 'svelte';
+  import { onDestroy, onMount, setContext, createEventDispatcher } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
 
   import type { GeoRefData } from '$lib/helpers/georeference';
 
   import { getMarkersPosInfo, gcpsToFeatureCollection, getBoundingboxFeatures } from '$lib/helpers/mapbox';
+
+  const dispatch = createEventDispatcher<{ mapReady: mapbox.Map }>();
 
   setContext<MapboxContext>(key, {
     getMap: () => map,
@@ -56,6 +58,10 @@
       style: 'mapbox://styles/mapbox/streets-v9',
       center: [0, 0],
       zoom: 3.5,
+    });
+
+    map.on('load', () => {
+      dispatch('mapReady', map);
     });
   });
 

@@ -1,11 +1,10 @@
-import cookie from 'cookie';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { mapbox } from '$lib/variables';
-import type { Locals } from '$lib/types';
 import type { RequestHandler } from '@sveltejs/kit';
 import { customAlphabet } from 'nanoid';
 import * as nanoidDictionary from 'nanoid-dictionary';
+import type { Locals } from '$lib/types';
 
 /**
  * Get the mapbox s3 bucket to upload image and signed url so the client can upload image directly.
@@ -24,7 +23,7 @@ export const get: RequestHandler = async () => {
 /**
  * Convert client uploaded s3 image to mapbox tileset.
  */
-export const post: RequestHandler<Locals, string> = async ({ locals, body }) => {
+export const post: RequestHandler<Locals, string> = async ({ body }) => {
   const nanoid = customAlphabet(nanoidDictionary.alphanumeric, 6);
   const tileset = `${mapbox.username}.${nanoid()}`;
   const { fileUrl, name } = JSON.parse(body);
@@ -39,13 +38,12 @@ export const post: RequestHandler<Locals, string> = async ({ locals, body }) => 
     return { status: 500, body: result };
   }
 
-  if (locals.tileset) {
-    fetch(`${mapbox.baseTilesetUrl}/${locals.tileset}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
-  }
+  // if (locals.tileset) {
+  //   fetch(`${mapbox.baseTilesetUrl}/${locals.tileset}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
+  // }
 
   return {
     status: 200,
     body: result,
-    headers: { 'set-cookie': cookie.serialize('tileset', tileset, { path: '/' }) },
   };
 };

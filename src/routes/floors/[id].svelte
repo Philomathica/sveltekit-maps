@@ -17,11 +17,13 @@
       return floor ? { props: { floor } } : goto('/');
     }
 
+    // todo: verify this
     return {};
   };
 </script>
 
 <script lang="ts">
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   import Map from '$lib/maps/Map.svelte';
   import type mapbox from 'mapbox-gl';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
@@ -36,8 +38,8 @@
   let uploadedImage: File;
   let loadingMessage = '';
   let error: string;
-  let initLng = 6;
   let initLat = 4;
+  let initLng = 6;
 
   function initMap(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     uploadedImage = event.currentTarget.files[0];
@@ -47,6 +49,7 @@
       const sw: mapbox.LngLatLike = [0, 0];
       const ne: mapbox.LngLatLike = [initLng, initLat];
       const geoRefData = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
+      console.log(geoRefData);
 
       map.addSource('id', { type: 'image', url: image.src, coordinates: getPositionInfo(geoRefData) });
       map.addLayer({ id: 'id', type: 'raster', source: 'id', paint: { 'raster-fade-duration': 0 } });
@@ -124,7 +127,7 @@
 <div class="flex flex-col h-full">
   <div class="flex gap-4 justify-between p-4">
     <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">Georeference</h2>
-    <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md">Upload Image</button>
+    <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md px-3 ">Upload Image</button>
     <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => initMap(e)} bind:this={imageInput} />
   </div>
 
@@ -136,10 +139,18 @@
   {/if}
 
   floor: {floor.number}
-
-  <div class="flex-1">
-    <Map bind:this={mapComponent} bind:gcps />
+  <div>
+    <button
+      disabled={!uploadedImage}
+      on:click={() => onConvertToGeotiffSelected()}
+      type="button"
+      class="p-1 px-3 bg-gray-300 border rounded-md disabled:opacity-75"
+    >
+      save
+    </button>
   </div>
 
-  <button on:click={() => onConvertToGeotiffSelected()} type="button" class="p-1 bg-gray-300 border rounded-md">save</button>
+  <div class="flex-1">
+    <Map bind:this={mapComponent} bind:gcps on:mapReady={event => (map = event.detail)} />
+  </div>
 </div>

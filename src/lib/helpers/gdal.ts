@@ -10,6 +10,8 @@ export function convertFileToImage(image: File, callback: (image: HTMLImageEleme
 
 export async function convertImageToGeoTiff(image: File, gcps: string[]) {
   const loam = await import('loam');
+  loam.initialize(window.location.origin);
+
   const file = await loam.open(image);
   const dataset = await file.convert(['-of', 'GTiff', '-a_srs', 'EPSG:4326', ...gcps]);
 
