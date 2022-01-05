@@ -126,25 +126,35 @@
 
 <div class="flex flex-col h-full">
   <div class="flex gap-4 justify-between p-4">
-    <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">Georeference</h2>
-    <button on:click={() => imageInput.click()} type="button" class="p-1 bg-gray-300 border rounded-md px-3 ">Upload Image</button>
+    <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">Georeference image (jpg/png)</h2>
+
     <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => initMap(e)} bind:this={imageInput} />
   </div>
 
-  {#if loadingMessage}
-    <p>{loadingMessage}</p>
-  {/if}
-  {#if error}
-    <p>error processing image: {error}</p>
-  {/if}
+  <div class="p-4">
+    floor: {floor.number}
 
-  floor: {floor.number}
-  <div>
+    {#if loadingMessage}
+      <p>{loadingMessage}</p>
+    {/if}
+    {#if error}
+      <p>error processing image: {error}</p>
+    {/if}
+  </div>
+
+  <div class="flex gap-4 justify-between p-4">
+    <button
+      on:click={() => imageInput.click()}
+      type="button"
+      class="bg-pink-500 text-white font-bold uppercase text-xs  rounded shadow hover:shadow-md outline-none focus:outline-none mr-1 mb-1  px-4 py-2"
+      >select Image</button
+    >
+
     <button
       disabled={!uploadedImage}
       on:click={() => onConvertToGeotiffSelected()}
       type="button"
-      class="p-1 px-3 bg-gray-300 border rounded-md disabled:opacity-75"
+      class="bg-pink-500 text-white font-bold uppercase text-xs  rounded shadow hover:shadow-md outline-none focus:outline-none mr-1 mb-1  px-4 py-2 disabled:opacity-25"
     >
       save
     </button>
