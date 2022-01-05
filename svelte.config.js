@@ -1,3 +1,4 @@
+import dotenv from 'dotenv';
 import adapter from '@sveltejs/adapter-netlify';
 import preprocess from 'svelte-preprocess';
 
@@ -14,6 +15,15 @@ const config = {
   kit: {
     target: 'body',
     adapter: adapter(),
+  },
+
+  vite: {
+    define: (() => {
+      const result = {};
+      const env = dotenv.config().parsed;
+      Object.entries(env).forEach(([k, v]) => (result[`process.env.${k}`] = `'${v}'`));
+      return result;
+    })(),
   },
 };
 

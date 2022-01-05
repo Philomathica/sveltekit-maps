@@ -2,6 +2,7 @@
  * Can be made globally available by placing this
  * inside `global.d.ts` and removing `export` keyword
  */
+
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface Locals {}
 

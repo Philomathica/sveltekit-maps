@@ -4,6 +4,12 @@ declare module 'loam';
 
 interface ImportMetaEnv {
   VITE_MAPBOX_ACCESS_TOKEN: string;
-  VITE_MAPBOX_UPLOAD_TOKEN: string;
-  VITE_MAPBOX_USERNAME: string;
+}
+
+declare namespace NodeJS {
+  interface ProcessEnv {
+    MAPBOX_UPLOAD_TOKEN: string;
+    MAPBOX_USERNAME: string;
+    NODE_ENV: 'development' | 'production';
+  }
 }
