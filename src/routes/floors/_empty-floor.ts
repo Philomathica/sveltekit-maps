@@ -1,8 +1,7 @@
 import type { FloorLevel } from '$lib/types';
-import { nanoid } from 'nanoid';
 
 export const emptyFloor: FloorLevel = {
-  id: nanoid(8),
+  id: 'new',
   name: '',
   number: 0,
   filename: '',

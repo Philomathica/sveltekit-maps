@@ -1,36 +1,19 @@
-<script lang="ts" context="module">
-  import type { FloorLevel } from '$lib/types';
-  import type { Load } from '@sveltejs/kit';
-  import { emptyFloor } from './_empty-floor';
-  import { goto } from '$app/navigation';
-  import { browser } from '$app/env';
-
-  export const load: Load = async ({ params }) => {
-    if (params.id === 'new') {
-      return { props: { floor: emptyFloor } };
-    }
-
-    if (browser) {
-      const floors: FloorLevel[] = window.localStorage.getItem('floor') ? JSON.parse(window.localStorage.getItem('floor')) : [];
-      const floor = floors.find(floor => floor.id === params.id);
-
-      return floor ? { props: { floor } } : goto('/');
-    }
-
-    // todo: verify this
-    return {};
-  };
-</script>
-
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
   import Map from '$lib/maps/Map.svelte';
   import type mapbox from 'mapbox-gl';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff } from '$lib/helpers/gdal';
+  import { nanoid } from 'nanoid';
+  import { page } from '$app/stores';
+  import type { FloorLevel } from '$lib/types';
+  import { emptyFloor } from './_empty-floor';
+  import { goto } from '$app/navigation';
+  import { browser } from '$app/env';
 
-  export let floor: FloorLevel;
-
+  let floor: FloorLevel;
+  let floorIdParam: string;
+  let storedFloors: FloorLevel[];
   let mapComponent: Map;
   let map: mapbox.Map;
   let gcps: string[];
@@ -41,6 +24,25 @@
   let initLat = 4;
   let initLng = 6;
 
+  function init() {
+    if (browser) {
+      const localFloors = window.localStorage.getItem('floors');
+      storedFloors = localFloors ? JSON.parse(localFloors) : [];
+      floorIdParam = $page.params.id;
+
+      if (floorIdParam === 'new') {
+        floor = emptyFloor;
+        return;
+      }
+
+      const foundFloor = storedFloors.find(floor => floor.id === floorIdParam);
+
+      if (!foundFloor) {
+        goto('/');
+      }
+    }
+  }
+
   function initMap(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     uploadedImage = event.currentTarget.files[0];
 
@@ -49,7 +51,6 @@
       const sw: mapbox.LngLatLike = [0, 0];
       const ne: mapbox.LngLatLike = [initLng, initLat];
       const geoRefData = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
-      console.log(geoRefData);
 
       map.addSource('id', { type: 'image', url: image.src, coordinates: getPositionInfo(geoRefData) });
       map.addLayer({ id: 'id', type: 'raster', source: 'id', paint: { 'raster-fade-duration': 0 } });
@@ -107,6 +108,24 @@
 
     map.addSource(uploadResult.tileset, { type: 'raster', url: `mapbox://${uploadResult.tileset}` });
     map.addLayer({ id: uploadResult.tileset, type: 'raster', source: uploadResult.tileset });
+
+    storeTileset(uploadResult.tileset);
+  }
+
+  export function storeTileset(tileSet: string) {
+    if (floorIdParam === 'new') {
+      floor.id = nanoid(8);
+      floor.tileset = tileSet;
+      window.localStorage.setItem('floors', JSON.stringify([...storedFloors, floor]));
+      return;
+    }
+
+    const floorToUpdate = storedFloors.find(floor => floor.id === floorIdParam);
+    if (floorToUpdate) {
+      floorToUpdate.tileset = tileSet;
+      const floorsWithout = storedFloors.filter(floor => floor.id === floorIdParam);
+      window.localStorage.setItem('floors', JSON.stringify([...floorsWithout, floorToUpdate]));
+    }
   }
 
   export async function getUploadResultWhenDone(id: string) {
@@ -122,9 +141,15 @@
 
     return await getUploadResultWhenDone(id);
   }
+
+  init();
 </script>
 
 <div class="flex flex-col h-full">
+  <div class="p-4">
+    <a class="text-blue-600" href="/">home</a>
+  </div>
+
   <div class="flex gap-4 justify-between p-4">
     <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">Georeference image (jpg/png)</h2>
 
@@ -132,7 +157,9 @@
   </div>
 
   <div class="p-4">
-    floor: {floor.number}
+    {#if floor}
+      floor: {floor.number}
+    {/if}
 
     {#if loadingMessage}
       <p>{loadingMessage}</p>

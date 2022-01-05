@@ -52,7 +52,7 @@
     return map;
   }
 
-  onMount(async () => {
+  onMount(() => {
     map = new mapbox.Map({
       container,
       style: 'mapbox://styles/mapbox/streets-v9',
