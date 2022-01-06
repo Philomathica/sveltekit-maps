@@ -5,7 +5,7 @@
 
   import type { GeoRefData } from '$lib/helpers/georeference';
 
-  import { getMarkersPosInfo, gcpsToFeatureCollection, getBoundingboxFeatures } from '$lib/helpers/mapbox';
+  import { getMarkersPosInfo } from '$lib/helpers/mapbox';
 
   const dispatch = createEventDispatcher<{ mapReady: mapbox.Map }>();
 
@@ -85,12 +85,12 @@
     const lowerLX = posInfo[3][0].toString();
     const lowerLY = posInfo[3][1].toString();
 
-    const cornerPoints: mapbox.LngLatLike[] = [
-      [+upperLX, +upperLY], // 1
-      [+upperRX, +upperRY], // 2
-      [+lowerRX, +lowerRY], // 3
-      [+lowerLX, +lowerLY], // 4
-    ];
+    // const cornerPoints: mapbox.LngLatLike[] = [
+    //   [+upperLX, +upperLY], // 1
+    //   [+upperRX, +upperRY], // 2
+    //   [+lowerRX, +lowerRY], // 3
+    //   [+lowerLX, +lowerLY], // 4
+    // ];
 
     gcps = [
       '-gcp',
@@ -114,71 +114,6 @@
       lowerLX,
       lowerLY,
     ];
-
-    const helperPoints = gcpsToFeatureCollection(upperLX, upperLY, upperRX, upperRY, lowerRX, lowerRY, lowerLX, lowerLY);
-
-    if (!map.getSource('pointSource')) {
-      map.addSource('pointSource', {
-        type: 'geojson',
-        data: helperPoints as any,
-      });
-    } else {
-      (map.getSource('pointSource') as any).setData(helperPoints);
-    }
-
-    if (!map.getLayer('pointsLayer')) {
-      map.addLayer({
-        id: 'pointsLayer',
-        type: 'circle',
-        source: 'pointSource',
-        paint: {
-          'circle-radius': 20,
-          'circle-color': '#fff',
-          'circle-opacity': 0.5,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#ccc',
-        },
-      });
-
-      map.addLayer({
-        id: 'labels',
-        type: 'symbol',
-        source: 'pointSource',
-        layout: {
-          'text-field': ['get', 'description'],
-          'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-          'text-radial-offset': 0,
-          'text-justify': 'auto',
-        },
-      });
-    }
-
-    // Draw bounding box
-    const bboxFeatureCollection = getBoundingboxFeatures(cornerPoints);
-
-    if (!map.getSource('bboxSource')) {
-      map.addSource('bboxSource', {
-        type: 'geojson',
-        data: bboxFeatureCollection as any,
-      });
-    } else {
-      (map.getSource('bboxSource') as any).setData(bboxFeatureCollection);
-    }
-
-    if (!map.getLayer('bboxLayer')) {
-      map.addLayer({
-        id: 'bboxLayer',
-        type: 'circle',
-        source: 'bboxSource',
-        paint: {
-          'circle-radius': 5,
-          'circle-color': '#000',
-          'circle-opacity': 1,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#0F0',
-        },
-      });
-    }
   }
 </script>
 

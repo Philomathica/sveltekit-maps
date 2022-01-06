@@ -110,6 +110,7 @@
     map.addLayer({ id: uploadResult.tileset, type: 'raster', source: uploadResult.tileset });
 
     storeTileset(uploadResult.tileset);
+    goto('/');
   }
 
   export function storeTileset(tileSet: string) {
