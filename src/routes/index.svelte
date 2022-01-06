@@ -12,6 +12,25 @@
   onMount(async () => {
     floors = window.localStorage.getItem('floors') ? JSON.parse(window.localStorage.getItem('floors')) : [];
   });
+
+  async function deleteFloor(floor: FloorLevel) {
+    const confirm = window.confirm(`Are you sure you want to delete ${floor.number}?`);
+
+    if (!confirm) {
+      return;
+    }
+
+    const response = await fetch(`/tilesets/${floor.tileset}.json`, { method: 'DELETE' });
+    if (!response.ok) {
+      return window.alert(`Error deleting tileset: ${await response.json()}`);
+    }
+
+    const localFloors = window.localStorage.getItem('floors');
+    const storedFloors: FloorLevel[] = localFloors ? JSON.parse(localFloors) : [];
+    const newFloors = storedFloors.filter(f => f.id !== floor.id);
+    window.localStorage.setItem('floors', JSON.stringify(newFloors));
+    floors = newFloors;
+  }
 </script>
 
 <svelte:head>
@@ -21,13 +40,13 @@
 <div class="flex flex-col h-full">
   <div class="flex gap-4 p-4">
     <div>
-      <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">Venue</h2>
+      <h2>Venue</h2>
       <p>Set (initial) longlat of venue</p>
       <label class="block w-full text-sm font-medium text-gray-700"
         >long
         <input
           type="number"
-          class="mt-1 px-3 py-2 bg-white border shadow-sm border-gray-300 placeholder-gray-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 rounded-md sm:text-sm focus:ring-1"
+          class="px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1"
           bind:value={initLng}
         />
       </label>
@@ -35,14 +54,14 @@
         >lat
         <input
           type="number"
-          class="mt-1 px-3 py-2 bg-white border shadow-sm border-gray-300 placeholder-gray-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 rounded-md sm:text-sm focus:ring-1"
+          class="px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1"
           bind:value={initLat}
         />
       </label>
 
-      <Floor {floors} />
+      <Floor {floors} on:delete={e => deleteFloor(e.detail)} />
 
-      <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight mt-4">Map</h2>
+      <h2>Map</h2>
     </div>
   </div>
 

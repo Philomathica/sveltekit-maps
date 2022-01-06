@@ -157,8 +157,8 @@
     <a class="text-blue-600" href="/">home</a>
   </div>
 
-  <div class="flex gap-4 justify-between p-4">
-    <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">Georeference image (jpg/png)</h2>
+  <div class="flex justify-between gap-4 p-4">
+    <h2>Georeference image (jpg/png)</h2>
 
     <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => initMap(e)} bind:this={imageInput} />
   </div>
@@ -176,22 +176,9 @@
     {/if}
   </div>
 
-  <div class="flex gap-4 justify-between p-4">
-    <button
-      on:click={() => imageInput.click()}
-      type="button"
-      class="bg-pink-500 text-white font-bold uppercase text-xs  rounded shadow hover:shadow-md outline-none focus:outline-none mr-1 mb-1  px-4 py-2"
-      >select Image</button
-    >
-
-    <button
-      disabled={!uploadedImage}
-      on:click={() => onConvertToGeotiffSelected()}
-      type="button"
-      class="bg-pink-500 text-white font-bold uppercase text-xs  rounded shadow hover:shadow-md outline-none focus:outline-none mr-1 mb-1  px-4 py-2 disabled:opacity-25"
-    >
-      save
-    </button>
+  <div class="flex justify-between gap-4 p-4">
+    <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
+    <button disabled={!uploadedImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary">save</button>
   </div>
 
   <div class="flex-1">

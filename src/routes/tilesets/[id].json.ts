@@ -19,19 +19,35 @@ export const post: RequestHandler<Locals, string> = async ({ params, body }) => 
   if (!response.ok) {
     console.error('error converting image:', result.message);
 
-    return { status: 500, body: result };
+    return { status: response.status, body: result };
   }
 
+  // only delete when there is an existing tileset
   if (params.id && params.id !== 'new') {
     const response = await fetch(`${mapbox.baseTilesetUrl}/${params.id}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
+    const result = await response.json();
 
     if (!response.ok) {
-      console.error('error deleting tileset:', await response.text());
+      console.error('error deleting tileset:', result);
+
+      return { status: response.status, body: result };
     }
   }
 
   return {
-    status: 200,
     body: result,
   };
+};
+
+export const del: RequestHandler = async ({ params }) => {
+  const response = await fetch(`${mapbox.baseTilesetUrl}/${params.id}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.error('error deleting tileset:', result);
+
+    return { status: response.status, body: result };
+  }
+
+  return { status: 204 };
 };
