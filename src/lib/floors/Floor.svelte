@@ -8,10 +8,10 @@
   export let floors: FloorLevel[] = [];
 </script>
 
-<h2>Floors</h2>
+<h2 class="mb-4">Floors</h2>
 
-<table class="w-full mb-4 text-sm border-2 border-collapse table-fixed">
-  <tbody class="dark:bg-gray-800 bg-white">
+<table>
+  <tbody>
     {#each floors as floor (floor.id)}
       <tr transition:fade|local>
         <td>{floor.id}</td>
@@ -24,10 +24,16 @@
     {/each}
   </tbody>
 </table>
-<a class="bg-cyan-500 px-4 py-2 text-sm font-semibold text-white rounded-full shadow-sm" href="/floors/new">add Floor</a>
+<a class="inline-block mb-6 btn btn-primary" href="/floors/new">add Floor</a>
 
 <style lang="postcss">
+  table {
+    @apply w-full mb-4 text-sm border-2 border-collapse table-fixed;
+  }
+  tbody {
+    @apply bg-white dark:bg-gray-800;
+  }
   td {
-    @apply p-4 pl-8 text-gray-500 border-b border-gray-100 dark:border-gray-700 dark:text-gray-400;
+    @apply p-1 pl-4 text-gray-500 border-b border-gray-100 dark:border-gray-700 dark:text-gray-400;
   }
 </style>
