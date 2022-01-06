@@ -27,6 +27,10 @@
       .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
       .addTo(map);
 
+    const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
+    (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(posInfo);
+    updateGCPs(posInfo, georefData);
+
     markerBL.on('drag', () => {
       const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
       (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(posInfo);
