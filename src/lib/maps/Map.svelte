@@ -17,13 +17,15 @@
 
   let map: mapbox.Map;
   let container: HTMLElement;
+  let markerBL: mapbox.Marker;
+  let markerTR: mapbox.Marker;
 
   export function dragImage(sourceId: string, georefData: GeoRefData) {
-    const markerBL = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
+    markerBL = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
       .setLngLat(new mapbox.LngLat(georefData.points[0].longitude, georefData.points[0].latitude))
       .addTo(map);
 
-    const markerTR = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
+    markerTR = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
       .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
       .addTo(map);
 
@@ -50,6 +52,15 @@
       const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
       updateGCPs(posInfo, georefData);
     });
+  }
+
+  export function getMarkers(): mapbox.Marker[] {
+    return [markerBL, markerTR].filter(Boolean);
+  }
+
+  export function removeMarkers() {
+    if (markerBL) markerBL.remove();
+    if (markerTR) markerTR.remove();
   }
 
   export function getMapInstance() {

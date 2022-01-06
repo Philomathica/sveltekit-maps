@@ -48,19 +48,38 @@
   let initLat = 4;
   let initLng = 6;
 
-  function initMap(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+  function setPreviewImage(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     uploadedImage = event.currentTarget.files[0];
 
     const setupLayer = (image: HTMLImageElement) => {
-      // todo extract from bbox of venue
-      const sw: mapbox.LngLatLike = [0, 0];
-      const ne: mapbox.LngLatLike = [initLng, initLat];
-      const geoRefData = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
+      // Clear map
+      if (map.getLayer('layerId')) {
+        map.removeLayer('layerId');
+      }
+      if (map.getSource('sourceId')) {
+        map.removeSource('sourceId');
+      }
+      mapComponent.removeMarkers();
 
-      map.addSource('id', { type: 'image', url: image.src, coordinates: getPositionInfo(geoRefData) });
-      map.addLayer({ id: 'id', type: 'raster', source: 'id', paint: { 'raster-fade-duration': 0 } });
-      mapComponent.dragImage('id', geoRefData);
+      // update previewImage
+      floor = { ...floor, previewImage: image.src, filename: uploadedImage.name };
+
+      if (floor.id === 'new') {
+        // todo extract from bbox of venue
+        const sw: mapbox.LngLatLike = [0, 0];
+        const ne: mapbox.LngLatLike = [initLng, initLat];
+        const initialGeoreference = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
+        floor = { ...floor, georeference: initialGeoreference };
+      }
+
+      map.addSource('sourceId', { type: 'image', url: image.src, coordinates: getPositionInfo(floor.georeference) });
+      map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
+
+      mapComponent.dragImage('sourceId', floor.georeference);
+
+      console.log(floor);
     };
+
     convertFileToImage(uploadedImage, setupLayer);
   }
 
@@ -133,7 +152,7 @@
       throw new Error('Could not find floor to update');
     }
 
-    const newFloors = [...storedFloors.filter(f => f.id !== floor.id), { ...floorToUpdate, tileset }];
+    const newFloors = [...storedFloors.filter(f => f.id !== floor.id), { ...floorToUpdate, tileset, floor }];
     window.localStorage.setItem('floors', JSON.stringify(newFloors));
   }
 
@@ -153,17 +172,15 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <div class="p-4">
+  <div class="px-4 py-2">
     <a class="text-blue-600" href="/">home</a>
   </div>
 
-  <div class="flex justify-between gap-4 p-4">
+  <div class="p-4 py-2">
     <h2>Georeference image (jpg/png)</h2>
-
-    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => initMap(e)} bind:this={imageInput} />
   </div>
 
-  <div class="p-4">
+  <div class="p-4 py-2">
     {#if floor}
       floor: {floor.number}
     {/if}
@@ -176,8 +193,13 @@
     {/if}
   </div>
 
-  <div class="flex justify-between gap-4 p-4">
-    <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
+  <div class="flex justify-between p-4 py-2">
+    <div>
+      <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
+      <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => setPreviewImage(e)} bind:this={imageInput} />
+      {floor?.filename}
+    </div>
+
     <button disabled={!uploadedImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary">save</button>
   </div>
 

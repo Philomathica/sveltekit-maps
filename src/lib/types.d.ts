@@ -26,4 +26,5 @@ export interface FloorLevel {
   georeference: Georeference;
   tileset: string;
   status: string;
+  previewImage: string;
 }

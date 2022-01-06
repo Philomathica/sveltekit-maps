@@ -5,6 +5,7 @@ export const emptyFloor: FloorLevel = {
   name: '',
   number: 0,
   filename: '',
+  previewImage: '',
   georeference: {
     points: [
       // SW
