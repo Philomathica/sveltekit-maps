@@ -20,7 +20,7 @@
       return;
     }
 
-    const response = await fetch(`/tilesets/${floor.tileset}.json`, { method: 'DELETE' });
+    const response = await fetch(`/api/tilesets/${floor.tileset}`, { method: 'DELETE' });
     if (!response.ok) {
       return window.alert(`Error deleting tileset: ${await response.json()}`);
     }

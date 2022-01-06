@@ -77,7 +77,7 @@
     error = null;
     loadingMessage = 'getting signed url...';
 
-    const mapsResponse = await fetch('/tilesets/s3.json');
+    const mapsResponse = await fetch('/api/tilesets/s3');
     if (!mapsResponse.ok) {
       error = 'Failed to get signed url';
       loadingMessage = null;
@@ -90,7 +90,7 @@
     await fetch(signedUrl, { body: geotiffFile, method: 'PUT' });
 
     loadingMessage = 'converting geotiff to tileset...';
-    const convertResponse = await fetch(`/tilesets/${floor.tileset}.json`, {
+    const convertResponse = await fetch(`/api/tilesets/${floor.tileset}`, {
       body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
       method: 'POST',
     });
@@ -138,7 +138,7 @@
   }
 
   export async function getUploadResultWhenDone(id: string) {
-    const response = await fetch(`/tilesets/jobs/${id}.json`);
+    const response = await fetch(`/api/tilesets/jobs/${id}`);
     const result = await response.json();
 
     if (result.complete || result.error) {

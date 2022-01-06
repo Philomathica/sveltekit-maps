@@ -13,7 +13,7 @@
 <table class="w-full mb-4 text-sm border-2 border-collapse table-fixed">
   <tbody class="dark:bg-gray-800 bg-white">
     {#each floors as floor (floor.id)}
-      <tr transition:fade>
+      <tr transition:fade|local>
         <td>{floor.id}</td>
         <td>{floor.number}</td>
         <td>{floor.filename}</td>
