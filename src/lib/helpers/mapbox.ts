@@ -2,7 +2,6 @@
 
 import mapbox from 'mapbox-gl';
 import type { GeoRefData } from './georeference';
-import { getPositionInfo } from './georeference';
 
 export function getBoundingboxFeatures(points: mapbox.LngLatLike[]): GeoJSON.FeatureCollection {
   const bounds = points.reduce((r, a) => r.extend(a), new mapbox.LngLatBounds(points[0], points[0]));
@@ -23,25 +22,29 @@ export function getBoundingboxFeatures(points: mapbox.LngLatLike[]): GeoJSON.Fea
   };
 }
 
-export function getMarkersPosInfo(markerBL: mapbox.Marker, markerTR: mapbox.Marker, georefData: GeoRefData): number[][] {
-  const { lng: lngBL, lat: latBL } = markerBL.getLngLat();
-  const { lng: lngTR, lat: latTR } = markerTR.getLngLat();
-  const newGeoRefData = {
+export function updateGeoRefDataByMarkers(markerSW: mapbox.Marker, markerNE: mapbox.Marker, georefData: GeoRefData): GeoRefData {
+
+  // *****(NE)!
+  // *        *
+  // *        *
+  // !(SW)*****
+
+  const { lng: lngSW, lat: latSW } = markerSW.getLngLat();
+  const { lng: lngNE, lat: latNE } = markerNE.getLngLat();
+  return {
     points: [
-      { x: 0, y: 0, longitude: lngBL, latitude: latBL }, // SW
+      { x: 0, // width 
+        y: 0, // height,
+        longitude: lngSW, latitude: latSW }, // SW
       {
         x: georefData.bbox[2], // width,
         y: georefData.bbox[3], // height,
-        longitude: lngTR, // NE
-        latitude: latTR,
-      },
+        longitude: lngNE, latitude: latNE }, // NE
     ],
     bbox: georefData.bbox,
   };
-
-  return getPositionInfo(newGeoRefData);
 }
-// temp
+
 export function gcpsToFeatureCollection(
   upperLX: number,
   upperLY: number,

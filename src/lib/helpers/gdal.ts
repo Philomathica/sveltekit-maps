@@ -24,3 +24,28 @@ export async function convertImageToGeoTiff(image: File, gcps: string[]) {
 
   return new File([fileBytes], filename, { type: 'image/tiff' });
 }
+
+export function sourceCoordinatesToGcpArr(sourceCoordinates: number[][], bbox: number[]): string[] {
+  return [
+    '-gcp',
+    '0',
+    '0',
+    sourceCoordinates[0][0].toString(),
+    sourceCoordinates[0][1].toString(),
+    '-gcp',
+    bbox[2].toString(),
+    '0',
+    sourceCoordinates[1][0].toString(),
+    sourceCoordinates[1][1].toString(),
+    '-gcp',
+    bbox[2].toString(),
+    bbox[3].toString(),
+    sourceCoordinates[2][0].toString(),
+    sourceCoordinates[2][1].toString(),
+    '-gcp',
+    '0',
+    bbox[3].toString(),
+    sourceCoordinates[3][0].toString(),
+    sourceCoordinates[3][1].toString(),
+  ];
+}

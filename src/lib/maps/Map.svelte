@@ -3,9 +3,9 @@
   import { onDestroy, onMount, setContext, createEventDispatcher } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
 
-  import type { GeoRefData } from '$lib/helpers/georeference';
+  import { GeoRefData, getPositionInfo } from '$lib/helpers/georeference';
 
-  import { getMarkersPosInfo } from '$lib/helpers/mapbox';
+  import { updateGeoRefDataByMarkers } from '$lib/helpers/mapbox';
 
   const dispatch = createEventDispatcher<{ mapReady: mapbox.Map }>();
 
@@ -13,54 +13,45 @@
     getMap: () => map,
   });
 
-  export let gcps: string[] = [];
+  export let sourceCoordinates: number[][] = [];
 
   let map: mapbox.Map;
   let container: HTMLElement;
-  let markerBL: mapbox.Marker;
-  let markerTR: mapbox.Marker;
+  let markerSW: mapbox.Marker;
+  let markerNE: mapbox.Marker;
 
-  export function dragImage(sourceId: string, georefData: GeoRefData) {
-    markerBL = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
+  export function setMarkerAndListeners(sourceId: string, georefData: GeoRefData) {
+    markerSW = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
       .setLngLat(new mapbox.LngLat(georefData.points[0].longitude, georefData.points[0].latitude))
       .addTo(map);
+    markerSW.on('drag', () => updateSourceCoordinates(markerSW, markerNE, sourceId, georefData));
+    markerSW.on('dragend', () => updateSourceCoordinates(markerSW, markerNE, sourceId, georefData));
 
-    markerTR = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
+    markerNE = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
       .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
       .addTo(map);
+    markerNE.on('drag', () => updateSourceCoordinates(markerSW, markerNE, sourceId, georefData));
+    markerNE.on('dragend', () => updateSourceCoordinates(markerSW, markerNE, sourceId, georefData));
 
-    const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-    (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(posInfo);
-    updateGCPs(posInfo, georefData);
-
-    markerBL.on('drag', () => {
-      const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-      (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(posInfo);
-    });
-
-    markerTR.on('drag', () => {
-      const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-      (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(posInfo);
-    });
-
-    markerBL.on('dragend', () => {
-      const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-      updateGCPs(posInfo, georefData);
-    });
-
-    markerTR.on('dragend', () => {
-      const posInfo = getMarkersPosInfo(markerBL, markerTR, georefData);
-      updateGCPs(posInfo, georefData);
-    });
+    // on init
+    updateSourceCoordinates(markerSW, markerNE, sourceId, georefData);
   }
 
-  export function getMarkers(): mapbox.Marker[] {
-    return [markerBL, markerTR].filter(Boolean);
+  export function updateSourceCoordinates(markerSW: mapbox.Marker, markerNE: mapbox.Marker, sourceId: string, georefData: GeoRefData) {
+    sourceCoordinates = getPositionInfo(updateGeoRefDataByMarkers(markerSW, markerNE, georefData));
+    (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(sourceCoordinates);
   }
 
   export function removeMarkers() {
-    if (markerBL) markerBL.remove();
-    if (markerTR) markerTR.remove();
+    if (markerSW) markerSW.remove();
+    if (markerNE) markerNE.remove();
+  }
+
+  export function removeSource(sourceId: string) {
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+  }
+  export function removeLayer(layerId: string) {
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
   }
 
   export function getMapInstance() {
@@ -85,51 +76,6 @@
       map.remove();
     }
   });
-
-  function updateGCPs(posInfo: any, georefData: GeoRefData) {
-    if (!posInfo) {
-      return;
-    }
-
-    const upperLX = posInfo[0][0].toString();
-    const upperLY = posInfo[0][1].toString();
-    const upperRX = posInfo[1][0].toString();
-    const upperRY = posInfo[1][1].toString();
-    const lowerRX = posInfo[2][0].toString();
-    const lowerRY = posInfo[2][1].toString();
-    const lowerLX = posInfo[3][0].toString();
-    const lowerLY = posInfo[3][1].toString();
-
-    // const cornerPoints: mapbox.LngLatLike[] = [
-    //   [+upperLX, +upperLY], // 1
-    //   [+upperRX, +upperRY], // 2
-    //   [+lowerRX, +lowerRY], // 3
-    //   [+lowerLX, +lowerLY], // 4
-    // ];
-
-    gcps = [
-      '-gcp',
-      '0',
-      '0',
-      upperLX,
-      upperLY,
-      '-gcp',
-      georefData.bbox[2].toString(),
-      '0',
-      upperRX,
-      upperRY,
-      '-gcp',
-      georefData.bbox[2].toString(),
-      georefData.bbox[3].toString(),
-      lowerRX,
-      lowerRY,
-      '-gcp',
-      '0',
-      georefData.bbox[3].toString(),
-      lowerLX,
-      lowerLY,
-    ];
-  }
 </script>
 
 <svelte:head>

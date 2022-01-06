@@ -28,7 +28,7 @@
   import Map from '$lib/maps/Map.svelte';
   import type mapbox from 'mapbox-gl';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
-  import { convertFileToImage, convertImageToGeoTiff } from '$lib/helpers/gdal';
+  import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
   import { nanoid } from 'nanoid';
   import type { FloorLevel } from '$lib/types';
   import { emptyFloor } from './_empty-floor';
@@ -40,13 +40,33 @@
 
   let mapComponent: Map;
   let map: mapbox.Map;
-  let gcps: string[];
+  let sourceCoordinates: number[][];
   let imageInput: HTMLInputElement;
   let uploadedImage: File;
   let loadingMessage = '';
   let error: string;
   let initLat = 4;
   let initLng = 6;
+
+  export function mapReady(mapInstance: mapbox.Map) {
+    map = mapInstance;
+
+    if (floor.id !== 'new') {
+      // Clear map
+      mapComponent.removeSource('sourceId');
+      mapComponent.removeLayer('layerId');
+      mapComponent.removeMarkers();
+      // add existing
+      map.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
+      map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
+      mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
+
+      // dataURLtoFile
+      fetch(floor.previewImage)
+        .then(res => res.arrayBuffer())
+        .then(buf => (uploadedImage = new File([buf], floor.filename, { type: undefined })));
+    }
+  }
 
   function setPreviewImage(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     uploadedImage = event.currentTarget.files[0];
@@ -72,10 +92,10 @@
         floor = { ...floor, georeference: initialGeoreference };
       }
 
-      map.addSource('sourceId', { type: 'image', url: image.src, coordinates: getPositionInfo(floor.georeference) });
+      map.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
       map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
 
-      mapComponent.dragImage('sourceId', floor.georeference);
+      mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
 
       console.log(floor);
     };
@@ -85,7 +105,8 @@
 
   async function onConvertToGeotiffSelected() {
     loadingMessage = 'Converting to GeoTIFF...';
-    const geotiffFile = await convertImageToGeoTiff(uploadedImage, gcps);
+
+    const geotiffFile = await convertImageToGeoTiff(uploadedImage, sourceCoordinatesToGcpArr(sourceCoordinates, floor.georeference.bbox));
     await uploadGeotiff(geotiffFile);
   }
 
@@ -141,19 +162,20 @@
   }
 
   export function storeTileset(tileset: string) {
+    floor.tileset = tileset;
+    floor.georeference = setGeoRefData(floor.georeference.bbox[2], floor.georeference.bbox[3], sourceCoordinates[3], sourceCoordinates[1]);
+
     if (floor.id === 'new') {
-      window.localStorage.setItem('floors', JSON.stringify([...storedFloors, { ...floor, id: nanoid(8), tileset }]));
+      window.localStorage.setItem('floors', JSON.stringify([...storedFloors, { ...floor, id: nanoid(8) }]));
 
       return;
     }
 
-    const floorToUpdate = storedFloors.find(f => f.id === floor.id);
-    if (!floorToUpdate) {
+    if (!storedFloors.find(f => f.id === floor.id)) {
       throw new Error('Could not find floor to update');
     }
 
-    const newFloors = [...storedFloors.filter(f => f.id !== floor.id), { ...floorToUpdate, tileset, floor }];
-    window.localStorage.setItem('floors', JSON.stringify(newFloors));
+    window.localStorage.setItem('floors', JSON.stringify([...storedFloors.filter(f => f.id !== floor.id), floor]));
   }
 
   export async function getUploadResultWhenDone(id: string) {
@@ -197,13 +219,17 @@
     <div>
       <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
       <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => setPreviewImage(e)} bind:this={imageInput} />
-      {floor?.filename}
+      {#if floor?.filename}
+        {floor?.filename}
+      {/if}
     </div>
 
-    <button disabled={!uploadedImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary">save</button>
+    <button disabled={!uploadedImage && !floor.previewImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary"
+      >save</button
+    >
   </div>
 
   <div class="flex-1">
-    <Map bind:this={mapComponent} bind:gcps on:mapReady={event => (map = event.detail)} />
+    <Map bind:this={mapComponent} bind:sourceCoordinates on:mapReady={e => mapReady(e.detail)} />
   </div>
 </div>
