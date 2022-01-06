@@ -13,6 +13,9 @@
         <td class="border-b border-gray-100 dark:border-gray-700 p-4 pl-8 text-gray-500 dark:text-gray-400">{floor.number}</td>
         <td class="border-b border-gray-100 dark:border-gray-700 p-4 pl-8 text-gray-500 dark:text-gray-400">{floor.filename}</td>
         <td class="border-b border-gray-100 dark:border-gray-700 p-4 pl-8 text-gray-500 dark:text-gray-400">{floor.tileset}</td>
+        <td class="border-b border-gray-100 dark:border-gray-700 p-4 pl-8 text-gray-500 dark:text-gray-400">
+          <a class="border-2" href="/floors/{floor.id}">Edit</a>
+        </td>
       </tr>
     {/each}
   </tbody>

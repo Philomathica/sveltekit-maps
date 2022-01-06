@@ -1,3 +1,28 @@
+<script context="module" lang="ts">
+  import type { Load } from '@sveltejs/kit';
+
+  export const load: Load = ({ params }) => {
+    if (!browser) {
+      return {};
+    }
+
+    const localFloors = window.localStorage.getItem('floors');
+    const storedFloors: FloorLevel[] = localFloors ? JSON.parse(localFloors) : [];
+
+    if (params.id === 'new') {
+      return { props: { floor: emptyFloor, storedFloors } };
+    }
+
+    const floor = storedFloors.find(floor => floor.id === params.id);
+
+    if (!floor) {
+      return goto('/');
+    }
+
+    return { props: { floor, storedFloors } };
+  };
+</script>
+
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
   import Map from '$lib/maps/Map.svelte';
@@ -5,15 +30,14 @@
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff } from '$lib/helpers/gdal';
   import { nanoid } from 'nanoid';
-  import { page } from '$app/stores';
   import type { FloorLevel } from '$lib/types';
   import { emptyFloor } from './_empty-floor';
   import { goto } from '$app/navigation';
   import { browser } from '$app/env';
 
-  let floor: FloorLevel;
-  let floorIdParam: string;
-  let storedFloors: FloorLevel[];
+  export let storedFloors: FloorLevel[];
+  export let floor: FloorLevel;
+
   let mapComponent: Map;
   let map: mapbox.Map;
   let gcps: string[];
@@ -23,25 +47,6 @@
   let error: string;
   let initLat = 4;
   let initLng = 6;
-
-  function init() {
-    if (browser) {
-      const localFloors = window.localStorage.getItem('floors');
-      storedFloors = localFloors ? JSON.parse(localFloors) : [];
-      floorIdParam = $page.params.id;
-
-      if (floorIdParam === 'new') {
-        floor = emptyFloor;
-        return;
-      }
-
-      const foundFloor = storedFloors.find(floor => floor.id === floorIdParam);
-
-      if (!foundFloor) {
-        goto('/');
-      }
-    }
-  }
 
   function initMap(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     uploadedImage = event.currentTarget.files[0];
@@ -72,7 +77,7 @@
     error = null;
     loadingMessage = 'getting signed url...';
 
-    const mapsResponse = await fetch('/maps.json');
+    const mapsResponse = await fetch('/tilesets/s3.json');
     if (!mapsResponse.ok) {
       error = 'Failed to get signed url';
       loadingMessage = null;
@@ -85,8 +90,11 @@
     await fetch(signedUrl, { body: geotiffFile, method: 'PUT' });
 
     loadingMessage = 'converting geotiff to tileset...';
-    const convertResponse = await fetch('/maps.json', { body: JSON.stringify({ fileUrl, name: geotiffFile.name }), method: 'POST' });
-    const { message, id } = await convertResponse.json();
+    const convertResponse = await fetch(`/tilesets/${floor.tileset}.json`, {
+      body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
+      method: 'POST',
+    });
+    const { message, id: uploadId } = await convertResponse.json();
 
     if (!convertResponse.ok) {
       error = message;
@@ -95,7 +103,7 @@
       return;
     }
 
-    const uploadResult = await getUploadResultWhenDone(id);
+    const uploadResult = await getUploadResultWhenDone(uploadId);
 
     if (uploadResult.error) {
       error = uploadResult.error;
@@ -113,24 +121,24 @@
     goto('/');
   }
 
-  export function storeTileset(tileSet: string) {
-    if (floorIdParam === 'new') {
-      floor.id = nanoid(8);
-      floor.tileset = tileSet;
-      window.localStorage.setItem('floors', JSON.stringify([...storedFloors, floor]));
+  export function storeTileset(tileset: string) {
+    if (floor.id === 'new') {
+      window.localStorage.setItem('floors', JSON.stringify([...storedFloors, { ...floor, id: nanoid(8), tileset }]));
+
       return;
     }
 
-    const floorToUpdate = storedFloors.find(floor => floor.id === floorIdParam);
-    if (floorToUpdate) {
-      floorToUpdate.tileset = tileSet;
-      const floorsWithout = storedFloors.filter(floor => floor.id === floorIdParam);
-      window.localStorage.setItem('floors', JSON.stringify([...floorsWithout, floorToUpdate]));
+    const floorToUpdate = storedFloors.find(f => f.id === floor.id);
+    if (!floorToUpdate) {
+      throw new Error('Could not find floor to update');
     }
+
+    const newFloors = [...storedFloors.filter(f => f.id !== floor.id), { ...floorToUpdate, tileset }];
+    window.localStorage.setItem('floors', JSON.stringify(newFloors));
   }
 
   export async function getUploadResultWhenDone(id: string) {
-    const response = await fetch(`/maps/status/${id}.json`);
+    const response = await fetch(`/tilesets/jobs/${id}.json`);
     const result = await response.json();
 
     if (result.complete || result.error) {
@@ -142,8 +150,6 @@
 
     return await getUploadResultWhenDone(id);
   }
-
-  init();
 </script>
 
 <div class="flex flex-col h-full">

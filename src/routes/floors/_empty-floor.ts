@@ -14,6 +14,6 @@ export const emptyFloor: FloorLevel = {
     ],
     bbox: [0, 0, 600, 400],
   },
-  tileset: 'string',
+  tileset: 'new',
   status: '',
 };
