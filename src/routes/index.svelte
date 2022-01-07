@@ -47,7 +47,9 @@
 
   function renderFloors(floors: FloorLevel[]) {
     floors.map(f => {
-      map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
+      // below uses only the previewImage
+      // map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
+      map.addSource(f.id, { type: 'raster', url: `mapbox://${f.tileset}` });
       map.addLayer({ id: f.id, type: 'raster', source: f.id, paint: { 'raster-fade-duration': 0 } });
       map.setLayoutProperty(f.id, 'visibility', 'none');
     });
