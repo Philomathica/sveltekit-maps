@@ -1,11 +1,10 @@
 <script context="module" lang="ts">
   import type { Load } from '@sveltejs/kit';
 
-  export const load: Load = async ({ params }) => {
+  export const load: Load = async ({ params, fetch }) => {
     if (params.id === 'new') {
       return { props: { floor: emptyFloor } };
     }
-
     const response = await fetch(`/api/floors/${params.id}`);
     const floor: FloorLevel = await response.json();
 
@@ -39,7 +38,7 @@
   let initLat = 4;
   let initLng = 6;
 
-  function mapReady(mapInstance: mapbox.Map) {
+  async function mapReady(mapInstance: mapbox.Map) {
     map = mapInstance;
 
     if (floor.id !== 'new') {
@@ -53,9 +52,9 @@
       mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
 
       // dataURLtoFile
-      fetch(floor.previewImage)
+      uploadedImage = await fetch(floor.previewImage)
         .then(res => res.arrayBuffer())
-        .then(buf => (uploadedImage = new File([buf], floor.filename, { type: undefined })));
+        .then(buf => new File([buf], floor.filename, { type: floor.type }));
     }
   }
 
@@ -73,7 +72,8 @@
       mapComponent.removeMarkers();
 
       // update previewImage
-      floor = { ...floor, previewImage: image.src, filename: uploadedImage.name };
+      const { type, name } = uploadedImage;
+      floor = { ...floor, previewImage: image.src, filename: name, name, type };
 
       if (floor.id === 'new') {
         // todo extract from bbox of venue
@@ -106,7 +106,9 @@
     error = null;
     loadingMessage = 'getting signed url...';
 
+    // S3 url
     const mapsResponse = await fetch('/api/tilesets/s3');
+
     if (!mapsResponse.ok) {
       error = 'Failed to get signed url';
       loadingMessage = null;
@@ -114,11 +116,15 @@
       return;
     }
 
+    // store geotiff on S3
     const { signedUrl, fileUrl } = await mapsResponse.json();
+
     loadingMessage = 'uploading to S3...';
     await fetch(signedUrl, { body: geotiffFile, method: 'PUT' });
 
     loadingMessage = 'converting geotiff to tileset...';
+    console.log('floor.tileset', floor.tileset);
+
     const convertResponse = await fetch(`/api/tilesets/${floor.tileset}`, {
       body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
       method: 'POST',
@@ -192,24 +198,25 @@
 
   <div class="p-4 py-2">
     {#if floor}
-      floor: {floor.number}
+      floor: {floor.number} | {floor?.filename} | {floor.tileset}
     {/if}
 
     {#if loadingMessage}
-      <p>{loadingMessage}</p>
+      <p class="text-gray-500">{loadingMessage}</p>
     {/if}
     {#if error}
-      <p>error processing image: {error}</p>
+      <p class="text-red-500">error processing image: {error}</p>
     {/if}
   </div>
 
+  <small class="text-gray-500">
+    {JSON.stringify(sourceCoordinates)}
+  </small>
+  <small>{floor.georeference.bbox}</small>
   <div class="flex justify-between p-4 py-2">
     <div>
       <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
       <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => setPreviewImage(e)} bind:this={imageInput} />
-      {#if floor?.filename}
-        {floor?.filename}
-      {/if}
     </div>
 
     <button disabled={!uploadedImage && !floor.previewImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary"

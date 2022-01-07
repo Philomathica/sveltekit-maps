@@ -27,4 +27,5 @@ export interface FloorLevel {
   tileset: string;
   status: string;
   previewImage: string;
+  type: string;
 }

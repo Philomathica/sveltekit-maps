@@ -13,12 +13,12 @@
 <table class="min-w-full">
   <thead>
     <tr>
-      <th>id</th>
-      <th>floor</th>
-      <th>filename</th>
-      <th>tileset</th>
+      <th>Id</th>
+      <th>Floor</th>
+      <th>Filename</th>
+      <th>Tileset</th>
       <th class="relative px-6 py-3">
-        <span class="sr-only">actions</span>
+        <span class="sr-only">Actions</span>
       </th>
     </tr>
   </thead>

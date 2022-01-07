@@ -17,4 +17,5 @@ export const emptyFloor: FloorLevel = {
   },
   tileset: 'new',
   status: '',
+  type: '',
 };
