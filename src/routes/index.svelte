@@ -13,11 +13,15 @@
   import Floor from '$lib/floors/Floor.svelte';
   import type { FloorLevel } from '$lib/types';
   import Nav from '$lib/nav/Nav.svelte';
+  import type mapbox from 'mapbox-gl';
+  import { getPositionInfo } from '$lib/helpers/georeference';
+  import FloorControl from '$lib/floorcontrol/FloorControl.svelte';
 
   export let floors: FloorLevel[];
 
   let initLng = 6;
   let initLat = 4;
+  let map: mapbox.Map;
 
   async function deleteFloor(floor: FloorLevel) {
     const confirm = window.confirm(`Are you sure you want to delete ${floor.number}?`);
@@ -32,6 +36,26 @@
     }
 
     floors = floors.filter(f => f.id !== floor.id);
+  }
+
+  async function mapReady(mapInstance: mapbox.Map) {
+    map = mapInstance;
+    if (floors.length) {
+      renderFloors(floors);
+    }
+  }
+
+  function renderFloors(floors: FloorLevel[]) {
+    floors.map(f => {
+      map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
+      map.addLayer({ id: f.id, type: 'raster', source: f.id, paint: { 'raster-fade-duration': 0 } });
+      map.setLayoutProperty(f.id, 'visibility', 'none');
+    });
+  }
+
+  function toggleFloor(floorId: string) {
+    floors.map(f => map.setLayoutProperty(f.id, 'visibility', 'none'));
+    map.setLayoutProperty(floorId, 'visibility', 'visible');
   }
 </script>
 
@@ -62,5 +86,10 @@
     </div>
   </div>
 
-  <div class="flex-1"><Map /></div>
+  <div class="flex-1">
+    {#if map && floors}
+      <FloorControl {floors} on:selectFloor={e => toggleFloor(e.detail)} />
+    {/if}
+    <Map on:mapReady={e => mapReady(e.detail)} />
+  </div>
 </div>
