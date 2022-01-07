@@ -25,6 +25,7 @@
   import type { FloorLevel } from '$lib/types';
   import { emptyFloor } from './_empty-floor';
   import { goto } from '$app/navigation';
+  import Nav from '$lib/nav/Nav.svelte';
 
   export let floor: FloorLevel;
 
@@ -188,43 +189,50 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <div class="px-4 py-2">
-    <a class="text-blue-600" href="/">home</a>
-  </div>
+  <Nav />
 
-  <div class="p-4 py-2">
-    <h2>Georeference image (jpg/png)</h2>
-  </div>
-
-  <div class="p-4 py-2">
-    {#if floor}
-      floor: {floor.number} | {floor?.filename} | {floor.tileset}
-    {/if}
-
-    {#if loadingMessage}
-      <p class="text-gray-500">{loadingMessage}</p>
-    {/if}
-    {#if error}
-      <p class="text-red-500">error processing image: {error}</p>
-    {/if}
-  </div>
-
-  <small class="text-gray-500">
-    {JSON.stringify(sourceCoordinates)}
-  </small>
-  <small>{floor.georeference.bbox}</small>
-  <div class="flex justify-between p-4 py-2">
-    <div>
-      <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
-      <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => setPreviewImage(e)} bind:this={imageInput} />
+  <div class="px-8 py-6">
+    <div class="">
+      <h2 class="mb-4">Georeference image (jpg/png)</h2>
     </div>
 
-    <button disabled={!uploadedImage && !floor.previewImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary"
-      >save</button
-    >
+    <div class="mb-4 text-sm text-gray-500">
+      {#if floor}
+        <p class="px-4 py-2 border-2">
+          floor: {floor.number}
+          {#if floor?.filename} | {floor?.filename}{/if}
+          {#if floor?.tileset} | {floor.tileset}{/if}
+        </p>
+      {/if}
+
+      {#if loadingMessage}
+        <p class="mt-2 text-gray-500">{loadingMessage}</p>
+      {/if}
+      {#if error}
+        <p class="mt-2 text-red-500">error processing image: {error}</p>
+      {/if}
+    </div>
+
+    <div class="flex justify-between">
+      <div>
+        <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
+        <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => setPreviewImage(e)} bind:this={imageInput} />
+      </div>
+
+      <button disabled={!uploadedImage && !floor.previewImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary"
+        >save</button
+      >
+    </div>
   </div>
 
   <div class="flex-1">
     <Map bind:this={mapComponent} bind:sourceCoordinates on:mapReady={e => mapReady(e.detail)} />
   </div>
+</div>
+
+<div class="absolute bottom-0 flex justify-between p-4 py-2 m-4">
+  <small class="text-gray-500">
+    {JSON.stringify(sourceCoordinates)}
+  </small>
+  <small>{floor.georeference.bbox}</small>
 </div>

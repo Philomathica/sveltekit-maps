@@ -9,7 +9,7 @@
     @apply h-full;
   }
   h2 {
-    @apply mt-4 text-3xl font-extrabold tracking-tight text-gray-900;
+    @apply text-3xl font-bold tracking-tight text-gray-800;
   }
 }
 

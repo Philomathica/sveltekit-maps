@@ -8,9 +8,7 @@
   export let floors: FloorLevel[] = [];
 </script>
 
-<h2 class="mb-4">Floors</h2>
-
-<table class="min-w-full">
+<table>
   <thead>
     <tr>
       <th>Id</th>
@@ -42,7 +40,7 @@
 
 <style lang="postcss">
   table {
-    @apply w-full mb-4 text-sm border-2 border-collapse table-fixed;
+    @apply mb-4 text-sm border-2 border-collapse table-auto min-w-full;
   }
   thead th {
     @apply bg-gray-50;
@@ -51,12 +49,12 @@
     @apply px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-700 uppercase;
   }
   tbody {
-    @apply bg-white dark:bg-gray-800;
+    @apply bg-white;
   }
   tr {
-    @apply bg-white border-b dark:bg-gray-800 dark:border-gray-700;
+    @apply bg-white border-b;
   }
   td {
-    @apply px-6 py-4 text-sm text-gray-500 whitespace-nowrap;
+    @apply px-6 py-2 text-sm text-gray-500 whitespace-nowrap;
   }
 </style>

@@ -12,6 +12,7 @@
   import Map from '$lib/maps/Map.svelte';
   import Floor from '$lib/floors/Floor.svelte';
   import type { FloorLevel } from '$lib/types';
+  import Nav from '$lib/nav/Nav.svelte';
 
   export let floors: FloorLevel[];
 
@@ -39,34 +40,27 @@
 </svelte:head>
 
 <div class="flex flex-col h-full">
-  <div class="flex gap-4 p-4">
+  <Nav />
+
+  <div class="flex gap-4 px-8 py-6">
     <div>
-      <h2>Venue</h2>
-      <p>Set (initial) longlat of venue</p>
-      <label class="block w-full text-sm font-medium text-gray-700"
-        >long
-        <input
-          type="number"
-          class="px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1"
-          bind:value={initLng}
-        />
-      </label>
-      <label class="block w-full text-sm font-medium text-gray-700"
-        >lat
-        <input
-          type="number"
-          class="px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1"
-          bind:value={initLat}
-        />
-      </label>
+      <h2 class="mb-4">Venue</h2>
+      <p class="text-gray-400">Set (initial) longlat of venue</p>
+      <input
+        type="number"
+        class="px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1"
+        bind:value={initLng}
+      />
+      <input
+        type="number"
+        class="px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1"
+        bind:value={initLat}
+      />
 
+      <h2 class="mt-8 mb-4">Floors</h2>
       <Floor {floors} on:delete={e => deleteFloor(e.detail)} />
-
-      <h2>Map</h2>
     </div>
   </div>
 
-  <div class="flex-1">
-    <Map />
-  </div>
+  <div class="flex-1"><Map /></div>
 </div>
