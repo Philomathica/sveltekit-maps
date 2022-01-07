@@ -23,7 +23,6 @@ export function getBoundingboxFeatures(points: mapbox.LngLatLike[]): GeoJSON.Fea
 }
 
 export function updateGeoRefDataByMarkers(markerSW: mapbox.Marker, markerNE: mapbox.Marker, georefData: GeoRefData): GeoRefData {
-
   // *****(NE)!
   // *        *
   // *        *
@@ -33,13 +32,18 @@ export function updateGeoRefDataByMarkers(markerSW: mapbox.Marker, markerNE: map
   const { lng: lngNE, lat: latNE } = markerNE.getLngLat();
   return {
     points: [
-      { x: 0, // width 
+      {
+        x: 0, // width
         y: 0, // height,
-        longitude: lngSW, latitude: latSW }, // SW
+        longitude: lngSW,
+        latitude: latSW,
+      }, // SW
       {
         x: georefData.bbox[2], // width,
         y: georefData.bbox[3], // height,
-        longitude: lngNE, latitude: latNE }, // NE
+        longitude: lngNE,
+        latitude: latNE,
+      }, // NE
     ],
     bbox: georefData.bbox,
   };
