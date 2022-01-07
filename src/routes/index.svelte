@@ -1,17 +1,22 @@
-<script lang="ts">
-  import { onMount } from 'svelte';
+<script context="module" lang="ts">
+  import type { Load } from '@sveltejs/kit';
 
+  export const load: Load = async ({ fetch }) => {
+    const response = await fetch('/api/floors');
+
+    return { props: { floors: await response.json() } };
+  };
+</script>
+
+<script lang="ts">
   import Map from '$lib/maps/Map.svelte';
   import Floor from '$lib/floors/Floor.svelte';
   import type { FloorLevel } from '$lib/types';
 
+  export let floors: FloorLevel[];
+
   let initLng = 6;
   let initLat = 4;
-  let floors: FloorLevel[] = [];
-
-  onMount(async () => {
-    floors = window.localStorage.getItem('floors') ? JSON.parse(window.localStorage.getItem('floors')) : [];
-  });
 
   async function deleteFloor(floor: FloorLevel) {
     const confirm = window.confirm(`Are you sure you want to delete ${floor.number}?`);
@@ -20,16 +25,12 @@
       return;
     }
 
-    const response = await fetch(`/api/tilesets/${floor.tileset}`, { method: 'DELETE' });
+    const response = await fetch(`/api/floors/${floor.id}`, { method: 'DELETE' });
     if (!response.ok) {
-      return window.alert(`Error deleting tileset: ${await response.json()}`);
+      return window.alert(`Error deleting tileset: ${await response.text()}`);
     }
 
-    const localFloors = window.localStorage.getItem('floors');
-    const storedFloors: FloorLevel[] = localFloors ? JSON.parse(localFloors) : [];
-    const newFloors = storedFloors.filter(f => f.id !== floor.id);
-    window.localStorage.setItem('floors', JSON.stringify(newFloors));
-    floors = newFloors;
+    floors = floors.filter(f => f.id !== floor.id);
   }
 </script>
 

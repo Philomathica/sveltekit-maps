@@ -8,6 +8,10 @@ export const mapbox = {
   username: getServerEnvVar('MAPBOX_USERNAME'),
 };
 
+export const mongodb = {
+  mongodbUri: getServerEnvVar('MONGODB_URI'), // scope is uploads:read, uploads:write and tilesets:write
+};
+
 function getServerEnvVar(key: keyof NodeJS.ProcessEnv) {
   if (browser) {
     return;

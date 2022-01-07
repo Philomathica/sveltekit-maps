@@ -38,16 +38,3 @@ export const post: RequestHandler<Locals, string> = async ({ params, body }) => 
     body: result,
   };
 };
-
-export const del: RequestHandler = async ({ params }) => {
-  const response = await fetch(`${mapbox.baseTilesetUrl}/${params.id}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
-  const result = await response.json();
-
-  if (!response.ok) {
-    console.error('error deleting tileset:', result);
-
-    return { status: response.status, body: result };
-  }
-
-  return { status: 204 };
-};

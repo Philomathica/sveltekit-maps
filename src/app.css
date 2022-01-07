@@ -8,12 +8,12 @@
   body {
     @apply h-full;
   }
-}
-
-@layer components {
   h2 {
     @apply mt-4 text-3xl font-extrabold tracking-tight text-gray-900;
   }
+}
+
+@layer components {
   .btn {
     @apply hover:shadow-md focus:outline-none disabled:opacity-25 px-4 py-2 mb-1 mr-1 text-xs font-bold text-white uppercase rounded shadow outline-none;
   }

@@ -1,25 +1,19 @@
 <script context="module" lang="ts">
   import type { Load } from '@sveltejs/kit';
 
-  export const load: Load = ({ params }) => {
-    if (!browser) {
-      return {};
-    }
-
-    const localFloors = window.localStorage.getItem('floors');
-    const storedFloors: FloorLevel[] = localFloors ? JSON.parse(localFloors) : [];
-
+  export const load: Load = async ({ params }) => {
     if (params.id === 'new') {
-      return { props: { floor: emptyFloor, storedFloors } };
+      return { props: { floor: emptyFloor } };
     }
 
-    const floor = storedFloors.find(floor => floor.id === params.id);
+    const response = await fetch(`/api/floors/${params.id}`);
+    const floor: FloorLevel = await response.json();
 
     if (!floor) {
       return goto('/');
     }
 
-    return { props: { floor, storedFloors } };
+    return { props: { floor } };
   };
 </script>
 
@@ -29,13 +23,10 @@
   import type mapbox from 'mapbox-gl';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
-  import { nanoid } from 'nanoid';
   import type { FloorLevel } from '$lib/types';
   import { emptyFloor } from './_empty-floor';
   import { goto } from '$app/navigation';
-  import { browser } from '$app/env';
 
-  export let storedFloors: FloorLevel[];
   export let floor: FloorLevel;
 
   let mapComponent: Map;
@@ -48,7 +39,7 @@
   let initLat = 4;
   let initLng = 6;
 
-  export function mapReady(mapInstance: mapbox.Map) {
+  function mapReady(mapInstance: mapbox.Map) {
     map = mapInstance;
 
     if (floor.id !== 'new') {
@@ -96,8 +87,6 @@
       map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
 
       mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
-
-      console.log(floor);
     };
 
     convertFileToImage(uploadedImage, setupLayer);
@@ -157,28 +146,27 @@
     map.addSource(uploadResult.tileset, { type: 'raster', url: `mapbox://${uploadResult.tileset}` });
     map.addLayer({ id: uploadResult.tileset, type: 'raster', source: uploadResult.tileset });
 
-    storeTileset(uploadResult.tileset);
+    await storeTileset(uploadResult.tileset);
     goto('/');
   }
 
-  export function storeTileset(tileset: string) {
-    floor.tileset = tileset;
-    floor.georeference = setGeoRefData(floor.georeference.bbox[2], floor.georeference.bbox[3], sourceCoordinates[3], sourceCoordinates[1]);
+  async function storeTileset(tileset: string) {
+    floor = {
+      ...floor,
+      tileset,
+      georeference: setGeoRefData(floor.georeference.bbox[2], floor.georeference.bbox[3], sourceCoordinates[3], sourceCoordinates[1]),
+    };
 
     if (floor.id === 'new') {
-      window.localStorage.setItem('floors', JSON.stringify([...storedFloors, { ...floor, id: nanoid(8) }]));
+      await fetch('/api/floors', { body: JSON.stringify(floor), method: 'POST' });
 
       return;
     }
 
-    if (!storedFloors.find(f => f.id === floor.id)) {
-      throw new Error('Could not find floor to update');
-    }
-
-    window.localStorage.setItem('floors', JSON.stringify([...storedFloors.filter(f => f.id !== floor.id), floor]));
+    await fetch(`/api/floors/${floor.id}`, { body: JSON.stringify(floor), method: 'PUT' });
   }
 
-  export async function getUploadResultWhenDone(id: string) {
+  async function getUploadResultWhenDone(id: string) {
     const response = await fetch(`/api/tilesets/jobs/${id}`);
     const result = await response.json();
 
