@@ -1,6 +1,9 @@
 {
   "headwind.runOnSave": true,
   "headwind.prependCustomClasses": true,
+  "headwind.classRegex": {
+    "html": "\\bclass\\s*=\\s*[\\\"\\']([_a-zA-Z0-9\\s\\-\\:\\/]+)[\\\"\\']|\\B@apply\\s+([_a-zA-Z0-9\\s\\-\\:\\/]+);"
+  },
   "eslint.validate": ["javascript", "typescript", "svelte"],
   "[svelte]": {
     "editor.defaultFormatter": "svelte.svelte-vscode"

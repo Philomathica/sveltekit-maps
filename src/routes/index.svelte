@@ -12,10 +12,8 @@
   import Map from '$lib/maps/Map.svelte';
   import Floor from '$lib/floors/Floor.svelte';
   import type { FloorLevel } from '$lib/types';
-  import Nav from '$lib/nav/Nav.svelte';
   import type mapbox from 'mapbox-gl';
-  import { getPositionInfo } from '$lib/helpers/georeference';
-  import FloorControl from '$lib/floorcontrol/FloorControl.svelte';
+  import FloorControl from '$lib/floors/FloorControl.svelte';
 
   export let floors: FloorLevel[];
 
@@ -65,21 +63,19 @@
   <title>Maps</title>
 </svelte:head>
 
-<div class="flex flex-col h-full">
-  <Nav />
-
-  <div class="flex gap-4 px-8 py-6">
+<div class="flex flex-col flex-1">
+  <div class="px-8 py-6">
     <div>
       <h2 class="mb-4">Venue</h2>
       <p class="text-gray-400">Set (initial) longlat of venue</p>
       <input
         type="number"
-        class="px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1"
+        class="focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1 px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm"
         bind:value={initLng}
       />
       <input
         type="number"
-        class="px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1"
+        class="focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1 px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm"
         bind:value={initLat}
       />
 
@@ -90,7 +86,7 @@
 
   <div class="flex-1">
     {#if map && floors}
-      <FloorControl {floors} on:selectFloor={e => toggleFloor(e.detail)} />
+      <FloorControl {floors} on:floorSelect={e => toggleFloor(e.detail)} />
     {/if}
     <Map on:mapReady={e => mapReady(e.detail)} />
   </div>

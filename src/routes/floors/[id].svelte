@@ -25,7 +25,6 @@
   import type { FloorLevel } from '$lib/types';
   import { emptyFloor } from './_empty-floor';
   import { goto } from '$app/navigation';
-  import Nav from '$lib/nav/Nav.svelte';
 
   export let floor: FloorLevel;
 
@@ -189,8 +188,6 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <Nav />
-
   <div class="px-8 py-6">
     <div class="">
       <h2 class="mb-4">Georeference image (jpg/png)</h2>
