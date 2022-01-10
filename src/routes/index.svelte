@@ -2,24 +2,37 @@
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ fetch }) => {
-    const response = await fetch('/api/floors');
+    const response = await fetch('/api/venues');
 
-    return { props: { floors: await response.json() } };
+    return { props: { venues: await response.json() } };
   };
 </script>
 
 <script lang="ts">
   import Map from '$lib/maps/Map.svelte';
+  import Modal from '$lib/ui/Modal.svelte';
   import Floor from '$lib/floors/Floor.svelte';
-  import type { FloorLevel } from '$lib/types';
-  import type mapbox from 'mapbox-gl';
+  import type { FloorLevel, Venue } from '$lib/types';
+  import type { Map as MapboxMap } from 'mapbox-gl';
   import FloorControl from '$lib/floors/FloorControl.svelte';
+  import { emptyVenue } from './venues/_empty-venue';
 
-  export let floors: FloorLevel[];
+  export let venues: Venue[];
 
-  let initLng = 6;
-  let initLat = 4;
-  let map: mapbox.Map;
+  let newVenue = emptyVenue;
+  let selectedVenue: Venue | undefined = venues.length > 0 ? venues[0] : undefined;
+  let map: MapboxMap;
+  let isModalOpen = false;
+  let isSubmitting = false;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function createVenue() {
+    isSubmitting = true;
+    await fetch('/api/venues', { method: 'POST', body: JSON.stringify(newVenue), headers: { 'Content-Type': 'application/json' } });
+    isSubmitting = false;
+    isModalOpen = false;
+    newVenue = emptyVenue;
+  }
 
   async function deleteFloor(floor: FloorLevel) {
     const confirm = window.confirm(`Are you sure you want to delete ${floor.number}?`);
@@ -33,28 +46,37 @@
       return window.alert(`Error deleting tileset: ${await response.text()}`);
     }
 
-    floors = floors.filter(f => f.id !== floor.id);
-  }
-
-  async function mapReady(mapInstance: mapbox.Map) {
-    map = mapInstance;
-    if (floors.length) {
-      renderFloors(floors);
+    const venue = venues.find(v => v.floors);
+    if (!venue) {
+      return;
     }
+
+    const updatedVenue = { ...venue, floors: venue.floors.filter(f => f.id !== floor.id) };
+    venues = [...venues.filter(v => v.id !== venue.id), updatedVenue];
   }
 
-  function renderFloors(floors: FloorLevel[]) {
-    floors.map(f => {
+  async function initMap(mapInstance: MapboxMap) {
+    map = mapInstance;
+
+    if (!selectedVenue?.floors.length) {
+      return;
+    }
+
+    selectedVenue.floors.map(floor => {
       // below uses only the previewImage
       // map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
-      map.addSource(f.id, { type: 'raster', url: `mapbox://${f.tileset}` });
-      map.addLayer({ id: f.id, type: 'raster', source: f.id, paint: { 'raster-fade-duration': 0 } });
-      map.setLayoutProperty(f.id, 'visibility', 'none');
+      map.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
+      map.addLayer({ id: floor.id, type: 'raster', source: floor.id, paint: { 'raster-fade-duration': 0 } });
+      map.setLayoutProperty(floor.id, 'visibility', 'none');
     });
   }
 
   function toggleFloor(floorId: string) {
-    floors.map(f => map.setLayoutProperty(f.id, 'visibility', 'none'));
+    if (!selectedVenue) {
+      return;
+    }
+
+    selectedVenue.floors.map(f => map.setLayoutProperty(f.id, 'visibility', 'none'));
     map.setLayoutProperty(floorId, 'visibility', 'visible');
   }
 </script>
@@ -65,29 +87,43 @@
 
 <div class="flex flex-col flex-1">
   <div class="px-8 py-6">
-    <div>
-      <h2 class="mb-4">Venue</h2>
-      <p class="text-gray-400">Set (initial) longlat of venue</p>
-      <input
-        type="number"
-        class="focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1 px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm"
-        bind:value={initLng}
-      />
-      <input
-        type="number"
-        class="focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm focus:ring-1 px-3 py-2 mt-1 placeholder-gray-400 bg-white border border-gray-300 rounded-md shadow-sm"
-        bind:value={initLat}
-      />
+    <h2>Venues</h2>
+    {#each venues as venue (venue.id)}
+      <div>{venue.name}</div>
+    {/each}
 
+    <button type="button" class="btn btn-primary ml-2" on:click={() => (isModalOpen = !isModalOpen)}>Create Venue</button>
+    <Modal bind:isModalOpen>
+      <form on:submit|preventDefault={createVenue} class="flex flex-col">
+        <label>
+          Name
+          <input required type="text" name="name" bind:value={newVenue.name} placeholder="name" />
+        </label>
+        <label>
+          LngLat
+          <input required type="number" name="lng" bind:value={newVenue.coordinates.lng} placeholder="lng" />
+          <input required type="number" name="lat" bind:value={newVenue.coordinates.lat} placeholder="lat" />
+        </label>
+
+        <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Submit</button>
+      </form>
+    </Modal>
+
+    {#if selectedVenue?.floors.length}
       <h2 class="mt-8 mb-4">Floors</h2>
-      <Floor {floors} on:delete={e => deleteFloor(e.detail)} />
-    </div>
+      <select bind:value={selectedVenue}>
+        {#each venues as venue (venue.id)}
+          <option value={venue}>{venue.name}</option>
+        {/each}
+      </select>
+      <Floor floors={selectedVenue?.floors} on:delete={e => deleteFloor(e.detail)} />
+    {/if}
   </div>
 
   <div class="flex-1">
-    {#if map && floors}
-      <FloorControl {floors} on:floorSelect={e => toggleFloor(e.detail)} />
+    {#if map && selectedVenue?.floors.length}
+      <FloorControl floors={selectedVenue.floors} on:floorSelect={e => toggleFloor(e.detail)} />
     {/if}
-    <Map on:mapReady={e => mapReady(e.detail)} />
+    <Map on:mapReady={e => initMap(e.detail)} />
   </div>
 </div>

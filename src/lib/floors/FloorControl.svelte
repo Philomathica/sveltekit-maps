@@ -25,17 +25,17 @@
   {#each floors as floor (floor.id)}
     <button
       type="button"
-      class="p-2 mb-1 text-xs text-gray-500 bg-white rounded-full"
+      class="w-10 h-10 mb-1 text-xs text-gray-500 bg-white rounded-full"
       class:selected={activeFloorId === floor.id}
       on:click={() => selectFloor(floor.id)}
     >
-      {floor.id.slice(0, 3)}
+      {floor.number}
     </button>
   {/each}
 </div>
 
 <style lang="postcss">
   .selected {
-    @apply bg-blue-600 text-white;
+    @apply text-white bg-blue-600;
   }
 </style>

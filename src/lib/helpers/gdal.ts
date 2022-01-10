@@ -4,7 +4,7 @@ export function convertFileToImage(image: File, callback: (image: HTMLImageEleme
   reader.onload = (event: ProgressEvent<FileReader>) => {
     const img = new Image();
     img.src = event.target.result as string;
-    img.onload = () => callback(img);
+    img.onload = () => callback(img); // todo: rewrite to promise
   };
 }
 

@@ -2,7 +2,6 @@ import type { FloorLevel } from '$lib/types';
 
 export const emptyFloor: FloorLevel = {
   id: 'new',
-  name: '',
   number: 0,
   filename: '',
   previewImage: '',

@@ -12,7 +12,7 @@ export const get: RequestHandler<Locals> = async () => {
 
   return {
     status: 200,
-    body: JSON.stringify(floors),
+    body: floors as any,
   };
 };
 
@@ -30,6 +30,6 @@ export const post: RequestHandler<Locals, string> = async ({ body }) => {
     headers: {
       location: `/api/floors/${newFloor.id}`,
     },
-    body: JSON.stringify(newFloor),
+    body: newFloor as any,
   };
 };

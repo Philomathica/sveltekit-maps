@@ -17,19 +17,18 @@
 </script>
 
 <script lang="ts">
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   import Map from '$lib/maps/Map.svelte';
-  import type mapbox from 'mapbox-gl';
+  import type { LngLatLike, Map as MapboxMap } from 'mapbox-gl';
+  import type { FloorLevel } from '$lib/types';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
-  import type { FloorLevel } from '$lib/types';
   import { emptyFloor } from './_empty-floor';
   import { goto } from '$app/navigation';
 
   export let floor: FloorLevel;
 
   let mapComponent: Map;
-  let map: mapbox.Map;
+  let map: MapboxMap;
   let sourceCoordinates: number[][];
   let imageInput: HTMLInputElement;
   let uploadedImage: File;
@@ -38,7 +37,7 @@
   let initLat = 4;
   let initLng = 6;
 
-  async function mapReady(mapInstance: mapbox.Map) {
+  async function mapReady(mapInstance: MapboxMap) {
     map = mapInstance;
 
     if (floor.id !== 'new') {
@@ -59,7 +58,13 @@
   }
 
   function setPreviewImage(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
-    uploadedImage = event.currentTarget.files[0];
+    const file = event.currentTarget.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    uploadedImage = file;
 
     const setupLayer = (image: HTMLImageElement) => {
       // Clear map
@@ -72,13 +77,13 @@
       mapComponent.removeMarkers();
 
       // update previewImage
-      const { type, name } = uploadedImage;
-      floor = { ...floor, previewImage: image.src, filename: name, name, type };
+      const { type, name: filename } = uploadedImage;
+      floor = { ...floor, previewImage: image.src, filename, type };
 
       if (floor.id === 'new') {
         // todo extract from bbox of venue
-        const sw: mapbox.LngLatLike = [0, 0];
-        const ne: mapbox.LngLatLike = [initLng, initLat];
+        const sw: LngLatLike = [0, 0];
+        const ne: LngLatLike = [initLng, initLat];
         const initialGeoreference = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
         floor = { ...floor, georeference: initialGeoreference };
       }
@@ -103,7 +108,7 @@
    * Upload image to presigned S3 url, create image from tileset, poll status and add image layer when tileset is created.
    */
   async function uploadGeotiff(geotiffFile: File) {
-    error = null;
+    error = '';
     loadingMessage = 'getting signed url...';
 
     // S3 url
@@ -111,7 +116,7 @@
 
     if (!mapsResponse.ok) {
       error = 'Failed to get signed url';
-      loadingMessage = null;
+      loadingMessage = '';
 
       return;
     }
@@ -128,12 +133,13 @@
     const convertResponse = await fetch(`/api/tilesets/${floor.tileset}`, {
       body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
     });
     const { message, id: uploadId } = await convertResponse.json();
 
     if (!convertResponse.ok) {
       error = message;
-      loadingMessage = null;
+      loadingMessage = '';
 
       return;
     }
@@ -142,7 +148,7 @@
 
     if (uploadResult.error) {
       error = uploadResult.error;
-      loadingMessage = null;
+      loadingMessage = '';
 
       return;
     }
@@ -164,15 +170,15 @@
     };
 
     if (floor.id === 'new') {
-      await fetch('/api/floors', { body: JSON.stringify(floor), method: 'POST' });
+      await fetch('/api/floors', { body: JSON.stringify(floor), method: 'POST', headers: { 'Content-Type': 'application/json' } });
 
       return;
     }
 
-    await fetch(`/api/floors/${floor.id}`, { body: JSON.stringify(floor), method: 'PUT' });
+    await fetch(`/api/floors/${floor.id}`, { body: JSON.stringify(floor), method: 'PUT', headers: { 'Content-Type': 'application/json' } });
   }
 
-  async function getUploadResultWhenDone(id: string) {
+  async function getUploadResultWhenDone(id: string): Promise<any> {
     const response = await fetch(`/api/tilesets/jobs/${id}`);
     const result = await response.json();
 
@@ -194,13 +200,11 @@
     </div>
 
     <div class="mb-4 text-sm text-gray-500">
-      {#if floor}
-        <p class="px-4 py-2 border-2">
-          floor: {floor.number}
-          {#if floor?.filename} | {floor?.filename}{/if}
-          {#if floor?.tileset} | {floor.tileset}{/if}
-        </p>
-      {/if}
+      <p class="px-4 py-2 border-2">
+        floor: {floor.number}
+        {#if floor.filename}|{floor.filename}{/if}
+        {#if floor.tileset}|{floor.tileset}{/if}
+      </p>
 
       {#if loadingMessage}
         <p class="mt-2 text-gray-500">{loadingMessage}</p>
@@ -216,9 +220,9 @@
         <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => setPreviewImage(e)} bind:this={imageInput} />
       </div>
 
-      <button disabled={!uploadedImage && !floor.previewImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary"
-        >save</button
-      >
+      <button disabled={!uploadedImage && !floor.previewImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary">
+        save
+      </button>
     </div>
   </div>
 

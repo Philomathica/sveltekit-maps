@@ -8,16 +8,14 @@
   export let floors: FloorLevel[] = [];
 </script>
 
-<table class="min-w-full mb-4 text-sm border-2 border-collapse table-auto">
+<table class="smb-4 text-sm border-2 border-collapse table-auto">
   <thead class="bg-gray-50">
     <tr>
       <th>Id</th>
       <th>Floor</th>
       <th>Filename</th>
       <th>Tileset</th>
-      <th class="relative px-6 py-3">
-        <span class="sr-only">Actions</span>
-      </th>
+      <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
     </tr>
   </thead>
   <tbody class="bg-white">

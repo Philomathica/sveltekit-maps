@@ -20,12 +20,18 @@ export interface Georeference {
 
 export interface FloorLevel {
   id: string;
-  name: string;
   number: number;
-  filename: string;
-  georeference: Georeference;
-  tileset: string;
   status: string;
-  previewImage: string;
-  type: string;
+  georeference?: Georeference;
+  filename?: string;
+  tileset?: string;
+  previewImage?: string;
+  type?: string;
+}
+
+export interface Venue {
+  id: string;
+  name: string;
+  coordinates: { lng: number; lat: number };
+  floors: FloorLevel[];
 }

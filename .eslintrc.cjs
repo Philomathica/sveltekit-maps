@@ -9,6 +9,9 @@ module.exports = {
     'svelte3/typescript': () => require('typescript'),
     'svelte3/ignore-styles': () => true,
   },
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'off',
+  },
   parserOptions: {
     sourceType: 'module',
     ecmaVersion: 2019,
