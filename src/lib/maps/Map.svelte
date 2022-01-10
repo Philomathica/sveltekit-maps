@@ -6,6 +6,7 @@
   import { GeoRefData, getPositionInfo } from '$lib/helpers/georeference';
 
   import { updateGeoRefDataByMarkers } from '$lib/helpers/mapbox';
+  import { browser } from '$app/env';
 
   const dispatch = createEventDispatcher<{ mapReady: mapbox.Map }>();
 
@@ -58,7 +59,7 @@
     return map;
   }
 
-  onMount(() => {
+  function load() {
     map = new mapbox.Map({
       container,
       style: 'mapbox://styles/mapbox/streets-v9',
@@ -69,7 +70,7 @@
     map.on('load', () => {
       dispatch('mapReady', map);
     });
-  });
+  }
 
   onDestroy(() => {
     if (map) {
@@ -79,7 +80,9 @@
 </script>
 
 <svelte:head>
-  <link rel="stylesheet" href="https://unpkg.com/mapbox-gl/dist/mapbox-gl.css" />
+  {#if browser}
+    <link rel="stylesheet" href="https://unpkg.com/mapbox-gl/dist/mapbox-gl.css" on:load={load} />
+  {/if}
 </svelte:head>
 
 <div class="w-full h-full" bind:this={container}>

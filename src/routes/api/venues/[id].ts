@@ -10,7 +10,7 @@ export const get: RequestHandler<Locals> = async ({ params }) => {
 
   return {
     status: 200,
-    body: JSON.stringify(venue),
+    body: venue as any,
   };
 };
 
@@ -26,7 +26,7 @@ export const put: RequestHandler<Locals, string> = async ({ params, body }) => {
 
   return {
     status: 200,
-    body: JSON.stringify(updatedVenue),
+    body: updatedVenue as any,
   };
 };
 
