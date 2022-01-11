@@ -9,7 +9,6 @@
   export let venueId: string;
 </script>
 
-venueId: {venueId}
 <table class="smb-4 text-sm border-2 border-collapse table-auto">
   <thead class="bg-gray-50">
     <tr>

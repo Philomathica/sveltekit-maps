@@ -16,6 +16,7 @@
   import type { Map as MapboxMap } from 'mapbox-gl';
   import FloorControl from '$lib/floors/FloorControl.svelte';
   import { emptyVenue } from './venues/_empty-venue';
+  import Venues from '$lib/venues/Venues.svelte';
 
   export let venues: Venue[];
 
@@ -31,6 +32,9 @@
     isSubmitting = false;
     isModalOpen = false;
     newVenue = emptyVenue;
+  }
+  async function deleteVenue(venue: Venue) {
+    console.log('venue', venue);
   }
 
   async function deleteFloor(floor: FloorLevel) {
@@ -86,12 +90,9 @@
 
 <div class="flex flex-col flex-1">
   <div class="px-8 py-6">
-    <h2>Venues</h2>
-    {#each venues as venue (venue.id)}
-      <div>{venue.name}</div>
-    {/each}
+    <h2 class="mb-4">Venues</h2>
+    <Venues {venues} on:delete={e => deleteVenue(e.detail)} />
 
-    <button type="button" class="btn btn-primary ml-2" on:click={() => (isModalOpen = !isModalOpen)}>Create Venue</button>
     <Modal bind:isModalOpen>
       <form on:submit|preventDefault={createVenue} class="flex flex-col">
         <label>
