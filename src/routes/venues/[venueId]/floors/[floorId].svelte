@@ -59,7 +59,7 @@
     }
   }
 
-  function setPreviewImage(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+  async function setPreviewImage(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     const file = event.currentTarget.files?.[0];
 
     if (!file) {
@@ -68,35 +68,33 @@
 
     uploadedImage = file;
 
-    const setupLayer = (image: HTMLImageElement) => {
-      // Clear map
-      if (map.getLayer('layerId')) {
-        map.removeLayer('layerId');
-      }
-      if (map.getSource('sourceId')) {
-        map.removeSource('sourceId');
-      }
-      mapComponent.removeMarkers();
+    const image = await convertFileToImage(uploadedImage);
 
-      // update previewImage
-      const { type, name: filename } = uploadedImage;
-      floor = { ...floor, previewImage: image.src, filename, type };
+    // Clear map
+    if (map.getLayer('layerId')) {
+      map.removeLayer('layerId');
+    }
+    if (map.getSource('sourceId')) {
+      map.removeSource('sourceId');
+    }
+    mapComponent.removeMarkers();
 
-      if (floor.id === 'new') {
-        // todo extract from bbox of venue
-        const sw: LngLatLike = [0, 0];
-        const ne: LngLatLike = [initLng, initLat];
-        const initialGeoreference = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
-        floor = { ...floor, georeference: initialGeoreference };
-      }
+    // update previewImage
+    const { type, name: filename } = uploadedImage;
+    floor = { ...floor, previewImage: image.src, filename, type };
 
-      map.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
-      map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
+    if (floor.id === 'new') {
+      // todo extract from bbox of venue
+      const sw: LngLatLike = [0, 0];
+      const ne: LngLatLike = [initLng, initLat];
+      const initialGeoreference = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
+      floor = { ...floor, georeference: initialGeoreference };
+    }
 
-      mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
-    };
+    map.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
+    map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
 
-    convertFileToImage(uploadedImage, setupLayer);
+    mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
   }
 
   async function onConvertToGeotiffSelected() {

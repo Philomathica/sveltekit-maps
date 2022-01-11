@@ -39,7 +39,6 @@
 
   async function deleteFloor(floor: FloorLevel) {
     const confirm = window.confirm(`Are you sure you want to delete ${floor.number}?`);
-
     if (!confirm) {
       return;
     }

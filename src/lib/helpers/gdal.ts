@@ -1,11 +1,23 @@
-export function convertFileToImage(image: File, callback: (image: HTMLImageElement) => void) {
-  const reader = new FileReader();
-  reader.readAsDataURL(image);
-  reader.onload = (event: ProgressEvent<FileReader>) => {
-    const img = new Image();
-    img.src = event.target.result as string;
-    img.onload = () => callback(img); // todo: rewrite to promise
-  };
+export function convertFileToImage(image: File) {
+  const promise = new Promise<HTMLImageElement>(resolve => {
+    const reader = new FileReader();
+
+    reader.onload = (event: ProgressEvent<FileReader>) => {
+      const img = new Image();
+
+      img.onload = () => {
+        resolve(img);
+      };
+
+      if (event.target) {
+        img.src = event.target.result as string;
+      }
+    };
+
+    reader.readAsDataURL(image);
+  });
+
+  return promise;
 }
 
 export async function convertImageToGeoTiff(image: File, gcps: string[]) {
