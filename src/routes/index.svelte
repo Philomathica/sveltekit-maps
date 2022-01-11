@@ -92,11 +92,19 @@
 
     {#if venues}
       <h2 class="mt-8 mb-4">Floors</h2>
-      <select bind:value={selectedVenue}>
-        {#each venues as venue (venue.id)}
-          <option value={venue}>{venue.name}</option>
-        {/each}
-      </select>
+      <label for="select" class="text-gray-400">Select Venue</label>
+      <div class="w-32 mb-3">
+        <select
+          id="select"
+          class="form-select block w-full px-3 py-1.5
+        text-base font-normal text-gray-700 border border-solid border-gray-300 rounded m-0 focus:outline-none"
+          bind:value={selectedVenue}
+        >
+          {#each venues as venue (venue.id)}
+            <option value={venue}>{venue.name}</option>
+          {/each}
+        </select>
+      </div>
     {/if}
 
     {#if selectedVenue}
