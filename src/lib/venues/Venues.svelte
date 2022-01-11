@@ -8,7 +8,7 @@
   export let venues: Venue[] = [];
 </script>
 
-<table class="smb-4 text-sm border-2 border-collapse table-auto mb-4">
+<table class="smb-4 mb-4 text-sm border-2 border-collapse table-auto">
   <thead class="bg-gray-50">
     <tr>
       <th>Id</th>

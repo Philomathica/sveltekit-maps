@@ -23,7 +23,11 @@
 </script>
 
 <script lang="ts">
+  import type { Map as MapboxMap } from 'mapbox-gl';
+  import Map from '$lib/maps/Map.svelte';
+
   export let venue: Venue;
+  let map: MapboxMap;
 
   let isSubmitting = false;
 
@@ -42,22 +46,32 @@
 
     goto('/');
   }
+
+  async function initMap(mapInstance: MapboxMap) {
+    map = mapInstance;
+  }
 </script>
 
-<div class="flex flex-col h-full">
-  <div class="px-8 py-6">{venue.id}</div>
+<div class="flex flex-row h-full">
+  <div class="px-8 py-6">
+    <h2 class="mb-4">{venue.id}</h2>
 
-  <form on:submit|preventDefault={createVenue} class="flex flex-col">
-    <label>
-      Name
-      <input required type="text" name="name" bind:value={venue.name} placeholder="name" />
-    </label>
-    <label>
-      LngLat
-      <input required type="number" name="lng" bind:value={venue.coordinates.lng} placeholder="lng" />
-      <input required type="number" name="lat" bind:value={venue.coordinates.lat} placeholder="lat" />
-    </label>
+    <form on:submit|preventDefault={createVenue} class="flex flex-col">
+      <label>
+        Name
+        <input required type="text" name="name" bind:value={venue.name} placeholder="name" />
+      </label>
+      <label>
+        LngLat
+        <input required type="number" name="lng" bind:value={venue.coordinates.lng} placeholder="lng" />
+        <input required type="number" name="lat" bind:value={venue.coordinates.lat} placeholder="lat" />
+      </label>
 
-    <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Submit</button>
-  </form>
+      <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Submit</button>
+    </form>
+  </div>
+
+  <div class="flex-1">
+    <Map on:mapReady={e => initMap(e.detail)} />
+  </div>
 </div>

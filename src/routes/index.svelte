@@ -9,10 +9,10 @@
 </script>
 
 <script lang="ts">
+  import type { Map as MapboxMap } from 'mapbox-gl';
   import Map from '$lib/maps/Map.svelte';
   import Floor from '$lib/floors/Floors.svelte';
   import type { FloorLevel, Venue } from '$lib/types';
-  import type { Map as MapboxMap } from 'mapbox-gl';
   import FloorControl from '$lib/floors/FloorControl.svelte';
   import Venues from '$lib/venues/Venues.svelte';
 
@@ -85,7 +85,7 @@
   <title>Maps</title>
 </svelte:head>
 
-<div class="flex flex-col flex-1">
+<div class="flex flex-row flex-1">
   <div class="px-8 py-6">
     <h2 class="mb-4">Venues</h2>
     <Venues {venues} on:delete={e => deleteVenue(e.detail)} />
