@@ -37,3 +37,15 @@ export interface Venue {
   coordinates: { lng: number; lat: number };
   floors: FloorLevel[];
 }
+
+export interface MapboxJobStatus {
+  id: string;
+  name: string;
+  complete: boolean;
+  error?: any;
+  created: Date;
+  modified: Date;
+  tileset: string;
+  owner: string;
+  progress: number;
+}

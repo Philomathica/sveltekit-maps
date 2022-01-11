@@ -10,29 +10,16 @@
 
 <script lang="ts">
   import Map from '$lib/maps/Map.svelte';
-  import Modal from '$lib/ui/Modal.svelte';
   import Floor from '$lib/floors/Floors.svelte';
   import type { FloorLevel, Venue } from '$lib/types';
   import type { Map as MapboxMap } from 'mapbox-gl';
   import FloorControl from '$lib/floors/FloorControl.svelte';
-  import { emptyVenue } from './venues/_empty-venue';
   import Venues from '$lib/venues/Venues.svelte';
 
   export let venues: Venue[];
 
-  let newVenue = emptyVenue;
   let selectedVenue: Venue | undefined = venues.length > 0 ? venues[0] : undefined;
   let map: MapboxMap;
-  let isModalOpen = false;
-  let isSubmitting = false;
-
-  async function createVenue() {
-    isSubmitting = true;
-    await fetch('/api/venues', { method: 'POST', body: JSON.stringify(newVenue), headers: { 'Content-Type': 'application/json' } });
-    isSubmitting = false;
-    isModalOpen = false;
-    newVenue = emptyVenue;
-  }
 
   async function deleteVenue(venue: Venue) {
     const confirm = window.confirm(`Are you sure you want to delete ${venue.name}?`);
@@ -103,22 +90,6 @@
     <h2 class="mb-4">Venues</h2>
     <Venues {venues} on:delete={e => deleteVenue(e.detail)} />
 
-    <Modal bind:isModalOpen>
-      <form on:submit|preventDefault={createVenue} class="flex flex-col">
-        <label>
-          Name
-          <input required type="text" name="name" bind:value={newVenue.name} placeholder="name" />
-        </label>
-        <label>
-          LngLat
-          <input required type="number" name="lng" bind:value={newVenue.coordinates.lng} placeholder="lng" />
-          <input required type="number" name="lat" bind:value={newVenue.coordinates.lat} placeholder="lat" />
-        </label>
-
-        <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Submit</button>
-      </form>
-    </Modal>
-
     {#if venues}
       <h2 class="mt-8 mb-4">Floors</h2>
       <select bind:value={selectedVenue}>
@@ -129,7 +100,7 @@
     {/if}
 
     {#if selectedVenue}
-      <Floor floors={selectedVenue?.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
+      <Floor floors={selectedVenue.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
     {/if}
   </div>
 

@@ -3,10 +3,12 @@
 
   export const load: Load = async ({ params, fetch }) => {
     const venueId = params.venueId;
+
     if (params.floorId === 'new') {
-      return { props: { floor: emptyFloor } };
+      return { props: { floor: emptyFloor, venueId } };
     }
-    const response = await fetch(`/api/venues/${venueId}floors/${params.floorId}`);
+
+    const response = await fetch(`/api/venues/${venueId}/floors/${params.floorId}`);
     const floor: FloorLevel = await response.json();
 
     if (!floor) {
@@ -20,7 +22,7 @@
 <script lang="ts">
   import Map from '$lib/maps/Map.svelte';
   import type { LngLatLike, Map as MapboxMap } from 'mapbox-gl';
-  import type { FloorLevel } from '$lib/types';
+  import type { FloorLevel, MapboxJobStatus } from '$lib/types';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
   import { emptyFloor } from './_empty-floor';
@@ -135,10 +137,10 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
-    const { message, id: uploadId } = await convertResponse.json();
+    const { error: errorMessage, id: uploadId }: MapboxJobStatus = await convertResponse.json();
 
     if (!convertResponse.ok) {
-      error = message;
+      error = errorMessage;
       loadingMessage = '';
 
       return;
@@ -170,12 +172,12 @@
     };
 
     if (floor.id === 'new') {
-      await fetch(`/api/${venueId}/floors`, { body: JSON.stringify(floor), method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      await fetch(`/api/venues/${venueId}/floors`, { body: JSON.stringify(floor), method: 'POST', headers: { 'Content-Type': 'application/json' } });
 
       return;
     }
 
-    await fetch(`/api/${venueId}/floors/${floor.id}`, {
+    await fetch(`/api/venues/${venueId}/floors/${floor.id}`, {
       body: JSON.stringify(floor),
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -200,6 +202,7 @@
 <div class="flex flex-col h-full">
   <div class="px-8 py-6">
     <div>
+      {venueId}
       <h2 class="mb-4">Georeference image (jpg/png)</h2>
     </div>
 
