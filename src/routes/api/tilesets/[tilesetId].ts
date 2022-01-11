@@ -13,7 +13,11 @@ export const post: RequestHandler<Locals, { fileUrl: string; name: string }, Typ
   const { fileUrl, name } = body;
   const url = `${mapbox.baseUploadUrl}?access_token=${mapbox.uploadToken}`;
   const payload = JSON.stringify({ url: fileUrl, tileset, name });
-  const response = await fetch(url, { body: payload, method: 'POST', headers: { 'Content-Type': 'application/json' } });
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    body: payload,
+  });
   const result: MapboxJobStatus = await response.json();
 
   if (!response.ok) {

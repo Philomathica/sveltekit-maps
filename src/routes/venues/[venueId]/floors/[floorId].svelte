@@ -2,34 +2,35 @@
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ params, fetch }) => {
-    const venueId = params.venueId;
+    const response = await fetch(`/api/venues/${params.venueId}`);
+    const venue: Venue = await response.json();
 
     if (params.floorId === 'new') {
-      return { props: { floor: emptyFloor, venueId } };
+      return { props: { venue, floor: emptyFloor } };
     }
 
-    const response = await fetch(`/api/venues/${venueId}/floors/${params.floorId}`);
-    const floor: FloorLevel = await response.json();
+    const floor = venue.floors.find(f => f.id === params.floorId);
 
-    if (!floor) {
-      return goto('/');
+    if (!venue || !floor) {
+      return { status: 404 };
     }
 
-    return { props: { floor, venueId } };
+    return { props: { venue, floor } };
   };
 </script>
 
 <script lang="ts">
   import Map from '$lib/maps/Map.svelte';
   import type { LngLatLike, Map as MapboxMap } from 'mapbox-gl';
-  import type { FloorLevel, MapboxJobStatus } from '$lib/types';
+  import type { FloorLevel, MapboxJobStatus, Venue } from '$lib/types';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
   import { emptyFloor } from './_empty-floor';
   import { goto } from '$app/navigation';
+  import { nanoid } from 'nanoid';
 
+  export let venue: Venue;
   export let floor: FloorLevel;
-  export let venueId: string;
 
   let mapComponent: Map;
   let map: MapboxMap;
@@ -125,20 +126,16 @@
 
     // store geotiff on S3
     const { signedUrl, fileUrl } = await mapsResponse.json();
-
     loadingMessage = 'uploading to S3...';
     await fetch(signedUrl, { body: geotiffFile, method: 'PUT' });
 
     loadingMessage = 'converting geotiff to tileset...';
-    console.log('floor.tileset', floor.tileset);
-
     const convertResponse = await fetch(`/api/tilesets/${floor.tileset}`, {
-      body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
-      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
     });
     const { error: errorMessage, id: uploadId }: MapboxJobStatus = await convertResponse.json();
-
     if (!convertResponse.ok) {
       error = errorMessage;
       loadingMessage = '';
@@ -147,14 +144,12 @@
     }
 
     const uploadResult = await getUploadResultWhenDone(uploadId);
-
     if (uploadResult.error) {
       error = uploadResult.error;
       loadingMessage = '';
 
       return;
     }
-
     loadingMessage = 'done converting';
 
     map.addSource(uploadResult.tileset, { type: 'raster', url: `mapbox://${uploadResult.tileset}` });
@@ -167,20 +162,17 @@
   async function storeTileset(tileset: string) {
     floor = {
       ...floor,
+      id: floor.id === 'new' ? nanoid(8) : floor.id,
       tileset,
       georeference: setGeoRefData(floor.georeference.bbox[2], floor.georeference.bbox[3], sourceCoordinates[3], sourceCoordinates[1]),
     };
 
-    if (floor.id === 'new') {
-      await fetch(`/api/venues/${venueId}/floors`, { body: JSON.stringify(floor), method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const updatedVenue: Venue = { ...venue, floors: [...venue.floors.filter(f => f.id !== floor.id), floor] };
 
-      return;
-    }
-
-    await fetch(`/api/venues/${venueId}/floors/${floor.id}`, {
-      body: JSON.stringify(floor),
-      method: 'PUT',
+    await fetch(`/api/venues/${venue.id}`, {
       headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+      body: JSON.stringify(updatedVenue),
     });
   }
 
@@ -202,7 +194,7 @@
 <div class="flex flex-col h-full">
   <div class="px-8 py-6">
     <div>
-      {venueId}
+      {venue.id}
       <h2 class="mb-4">Georeference image (jpg/png)</h2>
     </div>
 
@@ -224,10 +216,10 @@
     <div class="flex justify-between">
       <div>
         <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
-        <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={e => setPreviewImage(e)} bind:this={imageInput} />
+        <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={setPreviewImage} bind:this={imageInput} />
       </div>
 
-      <button disabled={!uploadedImage && !floor.previewImage} on:click={() => onConvertToGeotiffSelected()} type="button" class="btn btn-primary">
+      <button disabled={!uploadedImage && !floor.previewImage} on:click={onConvertToGeotiffSelected} type="button" class="btn btn-primary">
         save
       </button>
     </div>

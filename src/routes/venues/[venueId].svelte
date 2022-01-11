@@ -4,7 +4,7 @@
   import { goto } from '$app/navigation';
   import { emptyVenue } from './_empty-venue';
 
-  export const load: Load = async ({ params }) => {
+  export const load: Load = async ({ params, fetch }) => {
     const venueId = params.venueId;
 
     if (params.venueId === 'new') {
@@ -14,8 +14,10 @@
     const response = await fetch(`/api/venues/${venueId}`);
     const venue: Venue = await response.json();
 
-    if (!emptyVenue) {
-      return goto('/');
+    if (!venue) {
+      return {
+        status: 404,
+      };
     }
 
     return { props: { venue } };
@@ -31,8 +33,8 @@
   import type { AllGeoJSON } from '@turf/helpers';
 
   export let venue: Venue;
-  let map: MapboxMap;
 
+  let map: MapboxMap;
   let isSubmitting = false;
   let roundedArea: number;
   let centerPoint: number[];
@@ -42,8 +44,8 @@
 
     const response =
       venue.id === 'new'
-        ? await fetch('/api/venues', { method: 'POST', body: JSON.stringify(venue), headers: { 'Content-Type': 'application/json' } })
-        : await fetch(`/api/venues/${venue.id}`, { method: 'PUT', body: JSON.stringify(venue), headers: { 'Content-Type': 'application/json' } });
+        ? await fetch('/api/venues', { headers: { 'Content-Type': 'application/json' }, method: 'POST', body: JSON.stringify(venue) })
+        : await fetch(`/api/venues/${venue.id}`, { headers: { 'Content-Type': 'application/json' }, method: 'PUT', body: JSON.stringify(venue) });
 
     if (!response.ok) {
       console.error(response);

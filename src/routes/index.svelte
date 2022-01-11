@@ -10,19 +10,26 @@
 
 <script lang="ts">
   import type { Map as MapboxMap } from 'mapbox-gl';
+  import type { FloorLevel, Venue } from '$lib/types';
   import Map from '$lib/maps/Map.svelte';
   import Floor from '$lib/floors/Floors.svelte';
-  import type { FloorLevel, Venue } from '$lib/types';
   import FloorControl from '$lib/floors/FloorControl.svelte';
   import Venues from '$lib/venues/Venues.svelte';
 
   export let venues: Venue[];
 
-  let selectedVenue: Venue | undefined = venues.length > 0 ? venues[0] : undefined;
+  let selectedVenue: Venue | undefined = venues[0];
+  let selectedFloor: FloorLevel | undefined = venues[0]?.floors[0];
   let map: MapboxMap;
 
+  $: selectedVenue && resetSelectedFloor();
+
+  function resetSelectedFloor() {
+    selectedFloor = selectedVenue?.floors[0];
+  }
+
   async function deleteVenue(venue: Venue) {
-    const confirm = window.confirm(`Are you sure you want to delete ${venue.name}?`);
+    const confirm = window.confirm(`Are you sure you want to delete venue ${venue.name}?`);
     if (!confirm) {
       return;
     }
@@ -36,23 +43,21 @@
   }
 
   async function deleteFloor(floor: FloorLevel) {
-    const confirm = window.confirm(`Are you sure you want to delete ${floor.number}?`);
+    const confirm = window.confirm(`Are you sure you want to delete floor number ${floor.number}?`);
     if (!confirm || !selectedVenue) {
       return;
     }
 
-    const response = await fetch(`/api/venues/${selectedVenue.id}/floors/${floor.id}`, { method: 'DELETE' });
-    if (!response.ok) {
-      return window.alert(`Error deleting floor: ${await response.text()}`);
-    }
+    const updatedVenue = { ...selectedVenue, floors: selectedVenue.floors.filter(f => f.id !== floor.id) };
 
-    const foundVenue = venues.find(v => v.floors);
-    if (!foundVenue) {
-      return;
-    }
+    await fetch(`/api/venues/${selectedVenue.id}`, {
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+      body: JSON.stringify(updatedVenue),
+    });
 
-    const updatedVenue = { ...foundVenue, floors: foundVenue.floors.filter(f => f.id !== floor.id) };
-    venues = [...venues.filter(v => v.id !== foundVenue.id), updatedVenue];
+    venues = [...venues.filter(v => v.id !== updatedVenue.id), updatedVenue];
+    selectedVenue = venues.length > 0 ? venues[0] : undefined;
   }
 
   async function initMap(mapInstance: MapboxMap) {
@@ -86,33 +91,18 @@
 </svelte:head>
 
 <div class="flex flex-row flex-1">
-  <div class="px-8 py-6">
+  <div class="basis-1/3 px-8 py-6">
     <h2 class="mb-4">Venues</h2>
-    <Venues {venues} on:delete={e => deleteVenue(e.detail)} />
-
-    {#if venues}
-      <h2 class="mt-8 mb-4">Floors</h2>
-      <label for="select" class="text-gray-400">Select Venue</label>
-      <div class="w-32 mb-3">
-        <select
-          id="select"
-          class="form-select block w-full px-3 py-1.5
-        text-base font-normal text-gray-700 border border-solid border-gray-300 rounded m-0 focus:outline-none"
-          bind:value={selectedVenue}
-        >
-          {#each venues as venue (venue.id)}
-            <option value={venue}>{venue.name}</option>
-          {/each}
-        </select>
-      </div>
-    {/if}
+    <h3>Select a venue</h3>
+    <Venues {venues} on:venueSelect={event => (selectedVenue = event.detail)} on:delete={e => deleteVenue(e.detail)} />
 
     {#if selectedVenue}
-      <Floor floors={selectedVenue.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
+      <h3>Floors</h3>
+      <Floor bind:selectedFloor floors={selectedVenue.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
     {/if}
   </div>
 
-  <div class="flex-1">
+  <div class="basis-2/3">
     {#if map && selectedVenue?.floors.length}
       <FloorControl floors={selectedVenue.floors} on:floorSelect={e => toggleFloor(e.detail)} />
     {/if}
