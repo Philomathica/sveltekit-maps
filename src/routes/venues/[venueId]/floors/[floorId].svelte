@@ -199,7 +199,7 @@
 
 <div class="flex flex-col h-full">
   <div class="px-8 py-6">
-    <div class="">
+    <div>
       <h2 class="mb-4">Georeference image (jpg/png)</h2>
     </div>
 

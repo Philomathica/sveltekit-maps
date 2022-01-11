@@ -14,6 +14,7 @@
       <th>Id</th>
       <th>Name</th>
       <th>LongLat</th>
+      <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
     </tr>
   </thead>
   <tbody class="bg-white">
