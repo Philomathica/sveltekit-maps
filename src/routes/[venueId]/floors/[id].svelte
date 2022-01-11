@@ -2,17 +2,18 @@
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ params, fetch }) => {
+    const venueId = params.venueId;
     if (params.id === 'new') {
       return { props: { floor: emptyFloor } };
     }
-    const response = await fetch(`/api/floors/${params.id}`);
+    const response = await fetch(`/api/${params.venueId}floors/${params.id}`);
     const floor: FloorLevel = await response.json();
 
     if (!floor) {
       return goto('/');
     }
 
-    return { props: { floor } };
+    return { props: { floor, venueId } };
   };
 </script>
 
@@ -26,6 +27,7 @@
   import { goto } from '$app/navigation';
 
   export let floor: FloorLevel;
+  export let venueId: string;
 
   let mapComponent: Map;
   let map: MapboxMap;
@@ -170,12 +172,16 @@
     };
 
     if (floor.id === 'new') {
-      await fetch('/api/floors', { body: JSON.stringify(floor), method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      await fetch(`/api/${venueId}/floors`, { body: JSON.stringify(floor), method: 'POST', headers: { 'Content-Type': 'application/json' } });
 
       return;
     }
 
-    await fetch(`/api/floors/${floor.id}`, { body: JSON.stringify(floor), method: 'PUT', headers: { 'Content-Type': 'application/json' } });
+    await fetch(`/api/${venueId}/floors/${floor.id}`, {
+      body: JSON.stringify(floor),
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   async function getUploadResultWhenDone(id: string): Promise<any> {

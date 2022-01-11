@@ -6,8 +6,10 @@
   const dispatch = createEventDispatcher<{ delete: FloorLevel }>();
 
   export let floors: FloorLevel[] = [];
+  export let venueId: string;
 </script>
 
+venueId: {venueId}
 <table class="smb-4 text-sm border-2 border-collapse table-auto">
   <thead class="bg-gray-50">
     <tr>
@@ -26,7 +28,7 @@
         <td>{floor.filename}</td>
         <td>{floor.tileset}</td>
         <td class="text-right">
-          <a class="btn btn-secondary text-blue-600" href="/floors/{floor.id}">Edit</a>
+          <a class="btn btn-secondary text-blue-600" href="/{venueId}/floors/{floor.id}">Edit</a>
           <button class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', floor)}>Delete</button>
         </td>
       </tr>
@@ -34,7 +36,7 @@
   </tbody>
 </table>
 
-<a class="btn btn-primary inline-block mb-6" href="/floors/new">add Floor</a>
+<a class="btn btn-primary inline-block mb-6" href="/{venueId}/floors/new">add Floor</a>
 
 <style lang="postcss">
   th {

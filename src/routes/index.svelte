@@ -15,7 +15,7 @@
   import type { FloorLevel, Venue } from '$lib/types';
   import type { Map as MapboxMap } from 'mapbox-gl';
   import FloorControl from '$lib/floors/FloorControl.svelte';
-  import { emptyVenue } from './venues/_empty-venue';
+  import { emptyVenue } from './[venueId]/_empty-venue';
 
   export let venues: Venue[];
 
@@ -109,14 +109,16 @@
       </form>
     </Modal>
 
-    {#if selectedVenue?.floors.length}
+    {#if venues}
       <h2 class="mt-8 mb-4">Floors</h2>
       <select bind:value={selectedVenue}>
         {#each venues as venue (venue.id)}
           <option value={venue}>{venue.name}</option>
         {/each}
       </select>
-      <Floor floors={selectedVenue?.floors} on:delete={e => deleteFloor(e.detail)} />
+    {/if}
+    {#if selectedVenue}
+      <Floor floors={selectedVenue?.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
     {/if}
   </div>
 
