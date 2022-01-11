@@ -15,7 +15,7 @@
   import type { FloorLevel, Venue } from '$lib/types';
   import type { Map as MapboxMap } from 'mapbox-gl';
   import FloorControl from '$lib/floors/FloorControl.svelte';
-  import { emptyVenue } from './[venueId]/_empty-venue';
+  import { emptyVenue } from './venues/_empty-venue';
 
   export let venues: Venue[];
 
@@ -25,7 +25,6 @@
   let isModalOpen = false;
   let isSubmitting = false;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function createVenue() {
     isSubmitting = true;
     await fetch('/api/venues', { method: 'POST', body: JSON.stringify(newVenue), headers: { 'Content-Type': 'application/json' } });

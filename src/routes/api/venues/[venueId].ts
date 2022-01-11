@@ -6,7 +6,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 export const get: RequestHandler<Locals> = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
-  const venue = await collection.findOne<Venue>({ id: params.id }, { projection: { _id: 0 } });
+  const venue = await collection.findOne<Venue>({ id: params.venueId }, { projection: { _id: 0 } });
 
   return {
     status: 200,
@@ -20,7 +20,7 @@ export const put: RequestHandler<Locals, string> = async ({ params, body }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
 
-  const updatedVenue = { ...venue, id: params.id };
+  const updatedVenue = { ...venue, id: params.venueId };
 
   await collection.replaceOne({ id: venue.id }, updatedVenue);
 
@@ -35,7 +35,7 @@ export const del: RequestHandler<Locals> = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
 
-  await collection.deleteOne({ id: params.id });
+  await collection.deleteOne({ id: params.venueId });
 
   return {
     status: 204,

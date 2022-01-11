@@ -22,11 +22,11 @@ export interface FloorLevel {
   id: string;
   number: number;
   status: string;
-  georeference?: Georeference;
-  filename?: string;
-  tileset?: string;
-  previewImage?: string;
-  type?: string;
+  filename: string;
+  tileset: string;
+  previewImage: string;
+  type: string;
+  georeference: Georeference;
 }
 
 export interface Venue {

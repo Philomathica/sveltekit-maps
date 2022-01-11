@@ -9,7 +9,7 @@ export const put: RequestHandler<Locals, string> = async ({ params, body }) => {
   const client = await clientPromise;
   const collection = client.db().collection<FloorLevel>('floors');
 
-  const updatedFloor = { ...floor, id: params.id };
+  const updatedFloor = { ...floor, id: params.floorId };
 
   await collection.replaceOne({ id: floor.id }, updatedFloor);
 
@@ -24,7 +24,7 @@ export const del: RequestHandler<Locals> = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<FloorLevel>('floors');
 
-  const floor = await collection.findOne({ id: params.id });
+  const floor = await collection.findOne({ id: params.floorId });
 
   if (!floor) {
     return {
@@ -44,7 +44,7 @@ export const del: RequestHandler<Locals> = async ({ params }) => {
     return { status: response.status, body: result };
   }
 
-  await collection.deleteOne({ id: params.id });
+  await collection.deleteOne({ id: params.floorId });
 
   return {
     status: 204,

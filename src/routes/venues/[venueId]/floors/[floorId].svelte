@@ -3,10 +3,10 @@
 
   export const load: Load = async ({ params, fetch }) => {
     const venueId = params.venueId;
-    if (params.id === 'new') {
+    if (params.floorId === 'new') {
       return { props: { floor: emptyFloor } };
     }
-    const response = await fetch(`/api/${params.venueId}floors/${params.id}`);
+    const response = await fetch(`/api/venues/${venueId}floors/${params.floorId}`);
     const floor: FloorLevel = await response.json();
 
     if (!floor) {

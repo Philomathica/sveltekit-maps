@@ -23,8 +23,8 @@ export const post: RequestHandler<Locals, string> = async ({ params, body }) => 
   }
 
   // only delete when there is an existing tileset
-  if (params.id && params.id !== 'new') {
-    const response = await fetch(`${mapbox.baseTilesetUrl}/${params.id}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
+  if (params.tilesetId && params.tilesetId !== 'new') {
+    const response = await fetch(`${mapbox.baseTilesetUrl}/${params.tilesetId}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
     const result = await response.json();
 
     if (!response.ok) {
