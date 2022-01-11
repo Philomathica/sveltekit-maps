@@ -14,5 +14,5 @@ export const get: RequestHandler = async () => {
   const s3Client = new S3Client({ region: 'us-east-1', credentials: { accessKeyId, secretAccessKey, sessionToken } });
   const signedUrl = await getSignedUrl(s3Client, command);
 
-  return { status: 200, body: { signedUrl, fileUrl } };
+  return { body: { signedUrl, fileUrl } };
 };

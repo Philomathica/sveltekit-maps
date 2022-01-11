@@ -11,7 +11,7 @@
 <script lang="ts">
   import Map from '$lib/maps/Map.svelte';
   import Modal from '$lib/ui/Modal.svelte';
-  import Floor from '$lib/floors/Floor.svelte';
+  import Floor from '$lib/floors/Floors.svelte';
   import type { FloorLevel, Venue } from '$lib/types';
   import type { Map as MapboxMap } from 'mapbox-gl';
   import FloorControl from '$lib/floors/FloorControl.svelte';
@@ -33,28 +33,39 @@
     isModalOpen = false;
     newVenue = emptyVenue;
   }
-  async function deleteVenue(venue: Venue) {
-    console.log('venue', venue);
-  }
 
-  async function deleteFloor(floor: FloorLevel) {
-    const confirm = window.confirm(`Are you sure you want to delete ${floor.number}?`);
+  async function deleteVenue(venue: Venue) {
+    const confirm = window.confirm(`Are you sure you want to delete ${venue.name}?`);
     if (!confirm) {
       return;
     }
 
-    const response = await fetch(`/api/floors/${floor.id}`, { method: 'DELETE' });
+    const response = await fetch(`/api/venues/${venue.id}`, { method: 'DELETE' });
     if (!response.ok) {
-      return window.alert(`Error deleting tileset: ${await response.text()}`);
+      return window.alert(`Error deleting venue: ${await response.text()}`);
     }
 
-    const venue = venues.find(v => v.floors);
-    if (!venue) {
+    venues = venues.filter(v => v.id !== venue.id);
+  }
+
+  async function deleteFloor(floor: FloorLevel) {
+    const confirm = window.confirm(`Are you sure you want to delete ${floor.number}?`);
+    if (!confirm || !selectedVenue) {
       return;
     }
 
-    const updatedVenue = { ...venue, floors: venue.floors.filter(f => f.id !== floor.id) };
-    venues = [...venues.filter(v => v.id !== venue.id), updatedVenue];
+    const response = await fetch(`/api/venues/${selectedVenue.id}/floors/${floor.id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      return window.alert(`Error deleting floor: ${await response.text()}`);
+    }
+
+    const foundVenue = venues.find(v => v.floors);
+    if (!foundVenue) {
+      return;
+    }
+
+    const updatedVenue = { ...foundVenue, floors: foundVenue.floors.filter(f => f.id !== floor.id) };
+    venues = [...venues.filter(v => v.id !== foundVenue.id), updatedVenue];
   }
 
   async function initMap(mapInstance: MapboxMap) {
@@ -116,6 +127,7 @@
         {/each}
       </select>
     {/if}
+
     {#if selectedVenue}
       <Floor floors={selectedVenue?.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
     {/if}

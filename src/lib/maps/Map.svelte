@@ -1,6 +1,6 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  import { onDestroy, onMount, setContext, createEventDispatcher } from 'svelte';
+  import { onDestroy, setContext, createEventDispatcher } from 'svelte';
   import { mapbox, key, MapboxContext } from './mapbox';
 
   import { GeoRefData, getPositionInfo } from '$lib/helpers/georeference';

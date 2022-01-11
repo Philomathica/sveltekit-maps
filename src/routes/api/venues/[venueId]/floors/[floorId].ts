@@ -1,11 +1,11 @@
 import clientPromise from '$lib/db/mongo';
-import type { FloorLevel, Locals } from '$lib/types';
+import type { FloorLevel, Locals, Typify } from '$lib/types';
 import { mapbox } from '$lib/variables';
 import type { RequestHandler } from '@sveltejs/kit';
 
 // put floor
-export const put: RequestHandler<Locals, string> = async ({ params, body }) => {
-  const floor: FloorLevel = JSON.parse(body);
+export const put: RequestHandler<Locals, FloorLevel, Typify<FloorLevel>> = async ({ params, body }) => {
+  const floor = body as FloorLevel;
   const client = await clientPromise;
   const collection = client.db().collection<FloorLevel>('floors');
 
@@ -14,8 +14,7 @@ export const put: RequestHandler<Locals, string> = async ({ params, body }) => {
   await collection.replaceOne({ id: floor.id }, updatedFloor);
 
   return {
-    status: 200,
-    body: updatedFloor as any,
+    body: updatedFloor,
   };
 };
 

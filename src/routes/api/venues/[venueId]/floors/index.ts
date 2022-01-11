@@ -1,24 +1,22 @@
-// list floors
-
 import clientPromise from '$lib/db/mongo';
-import type { FloorLevel, Locals } from '$lib/types';
+import type { FloorLevel, Locals, Typify } from '$lib/types';
 import type { RequestHandler } from '@sveltejs/kit';
 import { nanoid } from 'nanoid';
 
-export const get: RequestHandler<Locals> = async () => {
+// list floors
+export const get: RequestHandler<Locals, any, Typify<FloorLevel[]>> = async () => {
   const client = await clientPromise;
   const collection = client.db().collection<FloorLevel>('floors');
   const floors = await collection.find<FloorLevel>({}).toArray();
 
   return {
-    status: 200,
-    body: floors as any,
+    body: floors,
   };
 };
 
 // create floor
-export const post: RequestHandler<Locals, string> = async ({ body }) => {
-  const floor = JSON.parse(body);
+export const post: RequestHandler<Locals, FloorLevel, Typify<FloorLevel>> = async ({ params, body }) => {
+  const floor = body as FloorLevel;
   const client = await clientPromise;
   const collection = client.db().collection<FloorLevel>('floors');
 
@@ -28,8 +26,8 @@ export const post: RequestHandler<Locals, string> = async ({ body }) => {
   return {
     status: 201,
     headers: {
-      location: `/api/floors/${newFloor.id}`,
+      location: `/api/venues/${params.venueId}/floors/${newFloor.id}`,
     },
-    body: newFloor as any,
+    body: newFloor,
   };
 };

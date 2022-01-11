@@ -7,10 +7,10 @@ import type { Locals } from '$lib/types';
 /**
  * Convert client uploaded s3 image to mapbox tileset.
  */
-export const post: RequestHandler<Locals, string> = async ({ params, body }) => {
+export const post: RequestHandler<Locals, { fileUrl: string; name: string }> = async ({ params, body }) => {
   const nanoid = customAlphabet(nanoidDictionary.alphanumeric, 6);
   const tileset = `${mapbox.username}.${nanoid()}`;
-  const { fileUrl, name } = JSON.parse(body);
+  const { fileUrl, name } = body;
   const url = `${mapbox.baseUploadUrl}?access_token=${mapbox.uploadToken}`;
   const payload = JSON.stringify({ url: fileUrl, tileset, name });
   const response = await fetch(url, { body: payload, method: 'POST', headers: { 'Content-Type': 'application/json' } });

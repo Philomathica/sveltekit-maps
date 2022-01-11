@@ -3,6 +3,8 @@
  * inside `global.d.ts` and removing `export` keyword
  */
 
+export type Typify<T> = { [K in keyof T]: Typify<T[K]> };
+
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface Locals {}
 

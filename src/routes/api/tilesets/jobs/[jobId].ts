@@ -8,5 +8,5 @@ export const get: RequestHandler = async ({ params }) => {
   const url = `${mapbox.baseUploadUrl}/${params.jobId}?access_token=${mapbox.uploadToken}`;
   const response = await fetch(url);
 
-  return { status: 200, body: await response.json() };
+  return { body: await response.json() };
 };
