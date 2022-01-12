@@ -9,7 +9,7 @@ export const mapbox = {
 };
 
 export const mongodb = {
-  mongodbUri: getServerEnvVar('MONGODB_URI'), // scope is uploads:read, uploads:write and tilesets:write
+  mongodbUri: getServerEnvVar('MONGODB_URI'),
 };
 
 function getServerEnvVar(key: keyof NodeJS.ProcessEnv) {
