@@ -18,9 +18,9 @@
 
   export let venues: Venue[];
 
-  let selectedVenue: Venue | undefined = venues[0];
+  let selectedVenue: Venue | undefined;
   let previousSelectedVenue: Venue | undefined;
-  let selectedFloor: FloorLevel | undefined = venues[0]?.floors[0];
+  let selectedFloor: FloorLevel | undefined;
   let mapInstance: MapboxMap;
   let map: Map;
 
@@ -101,7 +101,7 @@
   <div class="basis-1/3 min-w-0 px-8 py-6">
     <h2 class="mb-4">Venues</h2>
     <h3 class="mb-3">Select a venue</h3>
-    <Venues {venues} on:venueSelect={e => (selectedVenue = e.detail)} on:delete={e => deleteVenue(e.detail)} />
+    <Venues {venues} bind:selectedVenue on:delete={e => deleteVenue(e.detail)} />
 
     {#if selectedVenue}
       <h2 class="my-4">Floors</h2>
