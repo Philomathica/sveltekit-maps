@@ -5,6 +5,6 @@
 <style lang="postcss">
   .nav {
     @apply bg-white;
-    background-image: url('topo-lines.svg');
+    background-image: url('/topo-lines.svg');
   }
 </style>

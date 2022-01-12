@@ -1,5 +1,5 @@
-import { Geometry, Position } from 'geojson';
-import { LongLatLike } from 'mapbox-gl'
+import type { Polygon, Position } from 'geojson';
+import type { LongLatLike } from 'mapbox-gl';
 
 /**
  * Can be made globally available by placing this
@@ -38,7 +38,7 @@ export interface Venue {
   id: string;
   name: string;
   marker: Position | LongLatLike;
-  geometry: Geometry,
+  geometry: Polygon;
   floors: FloorLevel[];
 }
 

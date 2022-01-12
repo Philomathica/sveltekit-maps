@@ -1,6 +1,7 @@
 <script context="module" lang="ts">
   import type { Venue } from '$lib/types';
   import type { Load } from '@sveltejs/kit';
+  import type { Polygon } from 'geojson';
   import { goto } from '$app/navigation';
   import { emptyVenue } from './_empty-venue';
 
@@ -80,7 +81,7 @@
         return;
       }
 
-      venue.geometry = data.features[0].geometry;
+      venue.geometry = data.features[0].geometry as Polygon;
       console.log(venue.geometry);
       venue.marker = center(data as AllGeoJSON).geometry.coordinates;
       venue = venue;
@@ -141,7 +142,6 @@
 
         <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Save</button>
       </form>
-      <pre> {JSON.stringify(venue.geometry)}</pre>
     {/if}
   </div>
 
