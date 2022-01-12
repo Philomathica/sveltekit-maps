@@ -38,7 +38,7 @@
   import Venues from '$lib/components/venues/Venues.svelte';
   import MapMarker from '$lib/components/maps/MapMarker.svelte';
   import { invalidate } from '$app/navigation';
-  import FitToVenuesBtn from '$lib/maps/FitToVenuesBtn.svelte';
+  import FitToVenuesBtn from '$lib/components/maps/FitToVenuesBtn.svelte';
 
   export let venues: Venue[];
 
