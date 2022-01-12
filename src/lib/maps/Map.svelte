@@ -7,6 +7,7 @@
 
   import { updateGeoRefDataByMarkers } from '$lib/helpers/mapbox';
   import { browser } from '$app/env';
+  import mapboxgl from 'mapbox-gl';
 
   const dispatch = createEventDispatcher<{ mapReady: mapbox.Map }>();
 
@@ -70,6 +71,7 @@
 
     map.on('load', () => {
       dispatch('mapReady', map);
+      map.addControl(new mapboxgl.NavigationControl());
     });
   }
 
