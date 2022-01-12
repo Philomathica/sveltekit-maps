@@ -1,4 +1,4 @@
-<div class="nav px-8 py-6 border-b shadow-md">
+<div class="nav px-8 py-6 border-b shadow-md z-10">
   <a class="text-gray-800" href="/">home</a>
 </div>
 
