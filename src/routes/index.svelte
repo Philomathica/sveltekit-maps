@@ -32,11 +32,11 @@
 <script lang="ts">
   import type { Map as MapboxMap } from 'mapbox-gl';
   import type { FloorLevel, MapboxJobStatus, Venue } from '$lib/types';
-  import Map from '$lib/maps/Map.svelte';
-  import Floor from '$lib/floors/Floors.svelte';
-  import FloorControl from '$lib/floors/FloorControl.svelte';
-  import Venues from '$lib/venues/Venues.svelte';
-  import MapMarker from '$lib/maps/MapMarker.svelte';
+  import Map from '$lib/components/maps/Map.svelte';
+  import Floor from '$lib/components/floors/Floors.svelte';
+  import FloorControl from '$lib/components/floors/FloorControl.svelte';
+  import Venues from '$lib/components/venues/Venues.svelte';
+  import MapMarker from '$lib/components/maps/MapMarker.svelte';
   import { invalidate } from '$app/navigation';
 
   export let venues: Venue[];
@@ -46,6 +46,7 @@
   let selectedFloor: FloorLevel | undefined;
   let mapInstance: MapboxMap;
   let map: Map;
+  let loadingJobs: Promise<any>;
 
   $: mapInstance && selectedVenue && configureVenue();
   $: mapInstance && selectedFloor && configureFloor();
@@ -131,15 +132,16 @@
       <h2 class="my-4">Floors</h2>
       <div class="flex justify-between">
         <h3 class="mb-3">Select a Floor for venue <strong>{selectedVenue?.name}</strong></h3>
+        {#await loadingJobs}
+          Loading job result...
+        {/await}
       </div>
       <Floor
         bind:selectedFloor
         floors={selectedVenue.floors}
         venueId={selectedVenue.id}
         on:delete={e => deleteFloor(e.detail)}
-        on:jobResultRequested={e => {
-          invalidate(`/api/tilesets/jobs/${e.detail}`);
-        }}
+        on:jobResultRequested={e => (loadingJobs = invalidate(`/api/tilesets/jobs/${e.detail}`))}
       />
     {/if}
   </div>

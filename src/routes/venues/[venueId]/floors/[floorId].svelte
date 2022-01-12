@@ -20,7 +20,7 @@
 </script>
 
 <script lang="ts">
-  import Map from '$lib/maps/Map.svelte';
+  import Map from '$lib/components/maps/Map.svelte';
   import type { LngLatLike, Map as MapboxMap } from 'mapbox-gl';
   import type { FloorLevel, MapboxJobStatus, Venue } from '$lib/types';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';

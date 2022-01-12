@@ -29,7 +29,7 @@
   import type { Map as MapboxMap, LngLatBoundsLike } from 'mapbox-gl';
   import mapbox from 'mapbox-gl';
   import MapboxDraw from '@mapbox/mapbox-gl-draw';
-  import Map from '$lib/maps/Map.svelte';
+  import Map from '$lib/components/maps/Map.svelte';
   import center from '@turf/center';
   import bbox from '@turf/bbox';
 

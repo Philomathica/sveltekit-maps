@@ -1,6 +1,6 @@
 import mapbox from 'mapbox-gl';
 
-import { mapbox as mapbokTokens } from '../variables';
+import { mapbox as mapbokTokens } from '../../variables';
 
 export interface MapboxContext {
   getMap: () => mapbox.Map;
