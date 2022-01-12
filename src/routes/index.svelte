@@ -15,6 +15,7 @@
   import Floor from '$lib/floors/Floors.svelte';
   import FloorControl from '$lib/floors/FloorControl.svelte';
   import Venues from '$lib/venues/Venues.svelte';
+  import MapMarker from '$lib/maps/MapMarker.svelte';
 
   export let venues: Venue[];
 
@@ -49,6 +50,7 @@
 
     selectedFloor = selectedVenue.floors[0];
     previousSelectedVenue = selectedVenue;
+    mapInstance.flyTo({ center: selectedVenue.marker, zoom: 17 });
   }
 
   function configureFloor() {
@@ -111,7 +113,11 @@
   </div>
 
   <div class="basis-2/3">
-    <Map bind:this={map} on:mapReady={e => (mapInstance = e.detail)} />
+    <Map bind:this={map} on:mapReady={e => (mapInstance = e.detail)}>
+      {#each venues as venue}
+        <MapMarker lon={venue.marker[0]} lat={venue.marker[1]} on:click={() => (selectedVenue = venue)} />
+      {/each}
+    </Map>
 
     {#if mapInstance && selectedVenue}
       <FloorControl bind:selectedFloor floors={selectedVenue.floors} />
