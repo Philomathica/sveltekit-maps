@@ -31,7 +31,7 @@
           <td>{venue.name}</td>
           <td>{venue.marker}</td>
           <td class="text-right">
-            <a class="btn btn-secondary text-blue-600" href="/venues/{venue.id}">Edit</a>
+            <a class="btn btn-secondary text-blue-600" href="/venues/{venue.id}" sveltekit:prefetch>Edit</a>
             <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click|stopPropagation={() => dispatch('delete', venue)}>
               Delete
             </button>

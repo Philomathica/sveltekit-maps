@@ -3,7 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
 
-  const dispatch = createEventDispatcher<{ floorSelect: FloorLevel; delete: FloorLevel }>();
+  const dispatch = createEventDispatcher<{ floorSelect: FloorLevel; delete: FloorLevel; jobResultRequested: string }>();
 
   export let floors: FloorLevel[] = [];
   export let venueId: string;
@@ -19,6 +19,7 @@
           <th>Floor</th>
           <th>Filename</th>
           <th>Tileset</th>
+          <th>Job result</th>
           <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
         </tr>
       </thead>
@@ -34,8 +35,14 @@
             <td>{floor.number}</td>
             <td>{floor.filename.split('.')[0]}</td>
             <td>{floor.tileset.split('.')[1]}</td>
+            <td>
+              {floor.jobResult}
+              {#if floor.jobId}
+                <button type="button" class="text-xl" on:click={() => dispatch('jobResultRequested', floor.jobId)}>&#8635;</button>
+              {/if}
+            </td>
             <td class="text-right">
-              <a class="btn btn-secondary text-blue-600" href="/venues/{venueId}/floors/{floor.id}">Edit</a>
+              <a class="btn btn-secondary text-blue-600" href="/venues/{venueId}/floors/{floor.id}" sveltekit:prefetch>Edit</a>
               <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click|stopPropagation={() => dispatch('delete', floor)}
                 >Delete
               </button>

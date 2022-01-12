@@ -145,14 +145,6 @@
 
     loadingMessage = 'conversion job initiated...';
 
-    // const uploadResult = await getUploadResultWhenDone(uploadId);
-    // if (uploadResult.error) {
-    //   error = uploadResult.error;
-    //   loadingMessage = '';
-
-    //   return;
-    // }
-
     await storeTileset(jobId, tileset);
 
     goto('/');
@@ -175,20 +167,6 @@
       body: JSON.stringify(updatedVenue),
     });
   }
-
-  // async function getUploadResultWhenDone(id: string): Promise<any> {
-  //   const response = await fetch(`/api/tilesets/jobs/${id}`);
-  //   const result = await response.json();
-
-  //   if (result.complete || result.error) {
-  //     return result;
-  //   }
-
-  //   // wait for 2 seconds before querying status
-  //   await new Promise(resolve => setTimeout(resolve, 2000));
-
-  //   return await getUploadResultWhenDone(id);
-  // }
 </script>
 
 <div class="flex flex-row flex-1">
