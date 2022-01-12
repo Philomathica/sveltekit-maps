@@ -142,12 +142,6 @@
 
         <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Save</button>
       </form>
-
-      <div class="mt-8">
-        <pre class="max-w-sm overflow-hidden text-sm whitespace-pre-wrap">
-          {JSON.stringify(venue.geometry)}
-        </pre>
-      </div>
     {/if}
   </div>
 
