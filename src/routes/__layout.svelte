@@ -5,9 +5,7 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <div>
-    <Nav />
-  </div>
+  <Nav />
 
   <main class="flex flex-col flex-1">
     <slot />

@@ -1,3 +1,6 @@
+import { Geometry, Position } from 'geojson';
+import { LongLatLike } from 'mapbox-gl'
+
 /**
  * Can be made globally available by placing this
  * inside `global.d.ts` and removing `export` keyword
@@ -34,7 +37,8 @@ export interface FloorLevel {
 export interface Venue {
   id: string;
   name: string;
-  coordinates: { lng: number; lat: number };
+  marker: Position | LongLatLike;
+  geometry: Geometry,
   floors: FloorLevel[];
 }
 

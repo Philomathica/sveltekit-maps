@@ -4,5 +4,9 @@ export const emptyVenue: Venue = {
   id: 'new',
   name: '',
   floors: [],
-  coordinates: { lat: 0, lng: 0 },
+  marker:  [0,0],
+  geometry: {
+    coordinates: [[[0,0]]],
+    type: 'Polygon'
+  }
 };

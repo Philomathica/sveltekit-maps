@@ -191,11 +191,10 @@
   }
 </script>
 
-<div class="flex flex-col h-full">
+<div class="flex flex-row h-full">
   <div class="px-8 py-6">
     <div>
-      {venue.id}
-      <h2 class="mb-4">Georeference image (jpg/png)</h2>
+      <h2 class="mb-4">Georeference image</h2>
     </div>
 
     <div class="mb-4 text-sm text-gray-500">
@@ -215,7 +214,7 @@
 
     <div class="flex justify-between">
       <div>
-        <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image</button>
+        <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image (jpg/png)</button>
         <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={setPreviewImage} bind:this={imageInput} />
       </div>
 

@@ -17,7 +17,7 @@
 
 {#if selectedVenue}
   <div class="overflow-x-auto">
-    <table class="w-full mb-4 text-sm border-2 border-collapse table-fixed">
+    <table class="w-full mb-4 text-sm border border-collapse table-auto">
       <thead class="bg-gray-50">
         <tr>
           <th>Id</th>
@@ -36,7 +36,7 @@
           >
             <td>{venue.id}</td>
             <td>{venue.name}</td>
-            <td>{venue.coordinates.lng} {venue.coordinates.lat}</td>
+            <td>{venue.marker}</td>
             <td class="text-right">
               <a class="btn btn-secondary text-blue-600" href="/venues/{venue.id}">Edit</a>
               <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click|stopPropagation={() => dispatch('delete', venue)}>
@@ -54,18 +54,9 @@
 
 <style lang="postcss">
   .active {
-    @apply bg-blue-200;
+    @apply bg-blue-400;
   }
-
-  th {
-    @apply bg-gray-50 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-700 uppercase;
-  }
-
-  tr {
-    @apply bg-white border-b;
-  }
-
-  td {
-    @apply whitespace-nowrap px-6 py-2 text-sm text-gray-500;
+  .active td {
+    @apply text-white;
   }
 </style>

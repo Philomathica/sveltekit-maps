@@ -29,14 +29,12 @@
   import MapboxDraw from '@mapbox/mapbox-gl-draw';
   import Map from '$lib/maps/Map.svelte';
   import center from '@turf/center';
-  import area from '@turf/area';
   import type { AllGeoJSON } from '@turf/helpers';
 
   export let venue: Venue;
 
   let map: MapboxMap;
   let isSubmitting = false;
-  let roundedArea: number;
   let centerPoint: number[];
 
   async function createVenue() {
@@ -82,10 +80,9 @@
         return;
       }
 
-      roundedArea = Math.round(area(data) * 100) / 100;
-      centerPoint = center(data as AllGeoJSON).geometry.coordinates;
-      venue.coordinates.lng = centerPoint[0];
-      venue.coordinates.lat = centerPoint[1];
+      venue.geometry = data.features[0].geometry;
+      console.log(venue.geometry);
+      venue.marker = center(data as AllGeoJSON).geometry.coordinates;
       venue = venue;
     }
   }
@@ -97,56 +94,55 @@
 
 <div class="flex flex-row h-full">
   <div class="px-8 py-6">
-    <h2 class="mb-4">{venue.id}</h2>
+    {#if venue}
+      <h2 class="mb-4">{venue.id}</h2>
 
-    <form on:submit|preventDefault={createVenue} class="flex flex-col" autocomplete="off">
-      <label class="block mb-4 text-gray-400">
-        Venue Name
-        <input class="w-full" required type="text" name="name" bind:value={venue.name} placeholder="name" />
-      </label>
-      <label class="block mb-4 text-gray-400">
-        Longitude
-        <input
-          class="w-full"
-          required
-          type="number"
-          name="lng"
-          bind:value={venue.coordinates.lng}
-          placeholder="lng"
-          on:change={() => map.flyTo({ center: [venue.coordinates.lng, venue.coordinates.lat] })}
-        />
-      </label>
-      <label class="block mb-4 text-gray-400">
-        Latitude
-        <input
-          class="w-full"
-          required
-          type="number"
-          name="lat"
-          bind:value={venue.coordinates.lat}
-          placeholder="lat"
-          on:change={() => map.flyTo({ center: [venue.coordinates.lng, venue.coordinates.lat] })}
-        />
-      </label>
-      <p class="mb-4 font-bold">Click the map to draw a polygon.</p>
+      <form on:submit|preventDefault={createVenue} class="flex flex-col" autocomplete="off">
+        <label class="block mb-4 text-gray-400">
+          Venue Name
+          <input class="w-full" required type="text" name="name" bind:value={venue.name} placeholder="name" />
+        </label>
+        <label class="block mb-4 text-gray-400">
+          Longitude
+          <input
+            class="w-full"
+            required
+            type="number"
+            step="0.000000000000000001"
+            name="lng"
+            bind:value={venue.marker[0]}
+            placeholder="lng"
+            on:change={() => map.flyTo({ center: venue ? venue.marker : [0, 0] })}
+          />
+        </label>
+        <label class="block mb-4 text-gray-400">
+          Latitude
+          <input
+            class="w-full"
+            required
+            type="number"
+            step="0.000000000000000001"
+            name="lat"
+            bind:value={venue.marker[1]}
+            placeholder="lat"
+            on:change={() => map.flyTo({ center: venue ? venue.marker : [0, 0] })}
+          />
+        </label>
+        <p class="mb-4 font-bold">Click the map to draw a polygon.</p>
 
-      <div class=" block mb-4">
-        {#if roundedArea}
-          <span class="block text-gray-400">Area</span>{roundedArea} ㎡
+        {#if centerPoint}
+          <div class="block mb-4">
+            <span class="block text-gray-400">lng</span>
+            {centerPoint[0]}
+            <span class="block text-gray-400">lat</span>
+            {centerPoint[1]}
+          </div>
         {/if}
-      </div>
 
-      {#if centerPoint}
-        <div class="block mb-4">
-          <span class="block text-gray-400">lng</span>
-          {centerPoint[0]}
-          <span class="block text-gray-400">lat</span>
-          {centerPoint[1]}
-        </div>
-      {/if}
-
-      <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Save</button>
-    </form>
+        <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Save</button>
+      </form>
+      <pre> {JSON.stringify(venue.geometry)}</pre>
+    {/if}
   </div>
 
   <div class="flex-1">

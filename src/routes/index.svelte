@@ -91,21 +91,23 @@
 </svelte:head>
 
 <div class="flex flex-row flex-1">
-  <div class="basis-1/3 px-8 py-6">
+  <div class="basis-1/3 min-w-0 px-8 py-6">
     <h2 class="mb-4">Venues</h2>
-    <h3>Select a venue</h3>
+    <h3 class="mb-3">Select a venue</h3>
     <Venues {venues} on:venueSelect={event => (selectedVenue = event.detail)} on:delete={e => deleteVenue(e.detail)} />
 
     {#if selectedVenue}
-      <h3>Floors</h3>
+      <h2 class="my-4">Floors</h2>
+      <h3 class="mb-3">Select a Floor for venue <strong>{selectedVenue?.name}</strong></h3>
       <Floor bind:selectedFloor floors={selectedVenue.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
     {/if}
   </div>
 
   <div class="basis-2/3">
+    <Map on:mapReady={e => initMap(e.detail)} />
+
     {#if map && selectedVenue?.floors.length}
       <FloorControl floors={selectedVenue.floors} on:floorSelect={e => toggleFloor(e.detail)} />
     {/if}
-    <Map on:mapReady={e => initMap(e.detail)} />
   </div>
 </div>
