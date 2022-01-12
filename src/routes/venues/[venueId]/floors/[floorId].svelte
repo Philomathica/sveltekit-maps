@@ -191,8 +191,8 @@
   }
 </script>
 
-<div class="flex flex-row h-full">
-  <div class="px-8 py-6">
+<div class="flex flex-row flex-1">
+  <div class="basis-1/3 min-w-0 px-8 py-6">
     <div>
       <h2 class="mb-4">Georeference image</h2>
     </div>
@@ -224,14 +224,10 @@
     </div>
   </div>
 
-  <div class="flex-1">
+  <div class="basis-2/3">
     <Map bind:this={mapComponent} bind:sourceCoordinates on:mapReady={e => mapReady(e.detail)} />
+    <div class="absolute bottom-0 flex justify-between p-4 py-2 m-4">
+      <small>{floor.georeference.bbox}</small>
+    </div>
   </div>
-</div>
-
-<div class="absolute bottom-0 flex justify-between p-4 py-2 m-4">
-  <small class="text-gray-500">
-    {JSON.stringify(sourceCoordinates)}
-  </small>
-  <small>{floor.georeference.bbox}</small>
 </div>

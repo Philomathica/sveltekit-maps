@@ -93,8 +93,8 @@
   <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.2/mapbox-gl-draw.css" type="text/css" />
 </svelte:head>
 
-<div class="flex flex-row h-full">
-  <div class="px-8 py-6">
+<div class="flex flex-row flex-1">
+  <div class="basis-1/3 min-w-0 px-8 py-6">
     {#if venue}
       <h2 class="mb-4">{venue.id}</h2>
 
@@ -142,6 +142,12 @@
 
         <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Save</button>
       </form>
+
+      <div class="mt-8">
+        <pre class="max-w-sm overflow-hidden text-sm whitespace-pre-wrap">
+          {JSON.stringify(venue.geometry)}
+        </pre>
+      </div>
     {/if}
   </div>
 
