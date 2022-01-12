@@ -38,6 +38,7 @@
   import Venues from '$lib/components/venues/Venues.svelte';
   import MapMarker from '$lib/components/maps/MapMarker.svelte';
   import { invalidate } from '$app/navigation';
+  import FitToVenuesBtn from '$lib/maps/FitToVenuesBtn.svelte';
 
   export let venues: Venue[];
 
@@ -151,6 +152,10 @@
       {#each venues as venue}
         <MapMarker lon={venue.marker[0]} lat={venue.marker[1]} on:click={() => (selectedVenue = venue)} />
       {/each}
+
+      {#if venues.length}
+        <FitToVenuesBtn {venues} />
+      {/if}
     </Map>
 
     {#if mapInstance && selectedVenue}

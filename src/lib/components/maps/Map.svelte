@@ -65,8 +65,6 @@
     map = new mapbox.Map({
       container,
       style: 'mapbox://styles/mapbox/streets-v9',
-      center: [0, 0],
-      zoom: 3.5,
     });
 
     map.on('load', () => {
