@@ -177,10 +177,12 @@
               2,
             )}</pre>
         </div>
-        <label for="" class="block mb-4 text-xs font-light text-gray-400 uppercase">Boundingbox</label>
-        <div class="p-4 mb-4 text-xs font-light text-gray-500 bg-gray-200 border">
-          <pre>{JSON.stringify(boundingBox, undefined, 2)}</pre>
-        </div>
+        {#if devMode}
+          <label for="" class="block mb-4 text-xs font-light text-gray-400 uppercase">Boundingbox</label>
+          <div class="p-4 mb-4 text-xs font-light text-gray-500 bg-gray-200 border">
+            <pre>{JSON.stringify(boundingBox, undefined, 2)}</pre>
+          </div>
+        {/if}
 
         <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Save</button>
       </form>
