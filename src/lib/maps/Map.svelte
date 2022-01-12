@@ -51,6 +51,7 @@
   export function removeSource(sourceId: string) {
     if (map.getSource(sourceId)) map.removeSource(sourceId);
   }
+
   export function removeLayer(layerId: string) {
     if (map.getLayer(layerId)) map.removeLayer(layerId);
   }

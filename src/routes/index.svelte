@@ -19,13 +19,45 @@
   export let venues: Venue[];
 
   let selectedVenue: Venue | undefined = venues[0];
+  let previousSelectedVenue: Venue | undefined;
   let selectedFloor: FloorLevel | undefined = venues[0]?.floors[0];
-  let map: MapboxMap;
+  let mapInstance: MapboxMap;
+  let map: Map;
 
-  $: selectedVenue && resetSelectedFloor();
+  $: mapInstance && selectedVenue && configureVenue();
+  $: mapInstance && selectedFloor && configureFloor();
 
-  function resetSelectedFloor() {
-    selectedFloor = selectedVenue?.floors[0];
+  function configureVenue() {
+    if (!selectedVenue) {
+      return;
+    }
+
+    if (previousSelectedVenue) {
+      previousSelectedVenue.floors.forEach(floor => {
+        map.removeLayer(floor.id);
+        map.removeSource(floor.id);
+      });
+    }
+
+    selectedVenue.floors.map(floor => {
+      // below uses only the previewImage
+      // map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
+      mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
+      mapInstance.addLayer({ id: floor.id, type: 'raster', source: floor.id, paint: { 'raster-fade-duration': 0 } });
+      mapInstance.setLayoutProperty(floor.id, 'visibility', 'none');
+    });
+
+    selectedFloor = selectedVenue.floors[0];
+    previousSelectedVenue = selectedVenue;
+  }
+
+  function configureFloor() {
+    if (!selectedVenue || !selectedFloor) {
+      return;
+    }
+
+    selectedVenue.floors.map(f => mapInstance.setLayoutProperty(f.id, 'visibility', 'none'));
+    mapInstance.setLayoutProperty(selectedFloor.id, 'visibility', 'visible');
   }
 
   async function deleteVenue(venue: Venue) {
@@ -59,31 +91,6 @@
     venues = [...venues.filter(v => v.id !== updatedVenue.id), updatedVenue];
     selectedVenue = venues.length > 0 ? venues[0] : undefined;
   }
-
-  async function initMap(mapInstance: MapboxMap) {
-    map = mapInstance;
-
-    if (!selectedVenue?.floors.length) {
-      return;
-    }
-
-    selectedVenue.floors.map(floor => {
-      // below uses only the previewImage
-      // map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
-      map.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
-      map.addLayer({ id: floor.id, type: 'raster', source: floor.id, paint: { 'raster-fade-duration': 0 } });
-      map.setLayoutProperty(floor.id, 'visibility', 'none');
-    });
-  }
-
-  function toggleFloor(floorId: string) {
-    if (!selectedVenue) {
-      return;
-    }
-
-    selectedVenue.floors.map(f => map.setLayoutProperty(f.id, 'visibility', 'none'));
-    map.setLayoutProperty(floorId, 'visibility', 'visible');
-  }
 </script>
 
 <svelte:head>
@@ -94,7 +101,7 @@
   <div class="basis-1/3 min-w-0 px-8 py-6">
     <h2 class="mb-4">Venues</h2>
     <h3 class="mb-3">Select a venue</h3>
-    <Venues {venues} on:venueSelect={event => (selectedVenue = event.detail)} on:delete={e => deleteVenue(e.detail)} />
+    <Venues {venues} on:venueSelect={e => (selectedVenue = e.detail)} on:delete={e => deleteVenue(e.detail)} />
 
     {#if selectedVenue}
       <h2 class="my-4">Floors</h2>
@@ -104,10 +111,10 @@
   </div>
 
   <div class="basis-2/3">
-    <Map on:mapReady={e => initMap(e.detail)} />
+    <Map bind:this={map} on:mapReady={e => (mapInstance = e.detail)} />
 
-    {#if map && selectedVenue?.floors.length}
-      <FloorControl floors={selectedVenue.floors} on:floorSelect={e => toggleFloor(e.detail)} />
+    {#if mapInstance && selectedVenue}
+      <FloorControl bind:selectedFloor floors={selectedVenue.floors} />
     {/if}
   </div>
 </div>

@@ -29,6 +29,7 @@ export interface FloorLevel {
   status: string;
   filename: string;
   tileset: string;
+  jobId: string;
   previewImage: string;
   type: string;
   georeference: Georeference;

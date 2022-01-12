@@ -135,7 +135,7 @@
       method: 'POST',
       body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
     });
-    const { error: errorMessage, id: uploadId }: MapboxJobStatus = await convertResponse.json();
+    const { error: errorMessage, id: jobId, tileset }: MapboxJobStatus = await convertResponse.json();
     if (!convertResponse.ok) {
       error = errorMessage;
       loadingMessage = '';
@@ -143,27 +143,27 @@
       return;
     }
 
-    const uploadResult = await getUploadResultWhenDone(uploadId);
-    if (uploadResult.error) {
-      error = uploadResult.error;
-      loadingMessage = '';
+    loadingMessage = 'conversion job initiated...';
 
-      return;
-    }
-    loadingMessage = 'done converting';
+    // const uploadResult = await getUploadResultWhenDone(uploadId);
+    // if (uploadResult.error) {
+    //   error = uploadResult.error;
+    //   loadingMessage = '';
 
-    map.addSource(uploadResult.tileset, { type: 'raster', url: `mapbox://${uploadResult.tileset}` });
-    map.addLayer({ id: uploadResult.tileset, type: 'raster', source: uploadResult.tileset });
+    //   return;
+    // }
 
-    await storeTileset(uploadResult.tileset);
+    await storeTileset(jobId, tileset);
+
     goto('/');
   }
 
-  async function storeTileset(tileset: string) {
+  async function storeTileset(jobId: string, tileset: string) {
     floor = {
       ...floor,
-      id: floor.id === 'new' ? nanoid(8) : floor.id,
       tileset,
+      jobId,
+      id: floor.id === 'new' ? nanoid(8) : floor.id,
       georeference: setGeoRefData(floor.georeference.bbox[2], floor.georeference.bbox[3], sourceCoordinates[3], sourceCoordinates[1]),
     };
 
@@ -176,19 +176,19 @@
     });
   }
 
-  async function getUploadResultWhenDone(id: string): Promise<any> {
-    const response = await fetch(`/api/tilesets/jobs/${id}`);
-    const result = await response.json();
+  // async function getUploadResultWhenDone(id: string): Promise<any> {
+  //   const response = await fetch(`/api/tilesets/jobs/${id}`);
+  //   const result = await response.json();
 
-    if (result.complete || result.error) {
-      return result;
-    }
+  //   if (result.complete || result.error) {
+  //     return result;
+  //   }
 
-    // wait for 2 seconds before querying status
-    await new Promise(resolve => setTimeout(resolve, 2000));
+  //   // wait for 2 seconds before querying status
+  //   await new Promise(resolve => setTimeout(resolve, 2000));
 
-    return await getUploadResultWhenDone(id);
-  }
+  //   return await getUploadResultWhenDone(id);
+  // }
 </script>
 
 <div class="flex flex-row flex-1">

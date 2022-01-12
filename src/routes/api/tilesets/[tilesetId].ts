@@ -33,8 +33,6 @@ export const post: RequestHandler<Locals, { fileUrl: string; name: string }, Typ
 
     if (!response.ok) {
       console.error('error deleting tileset:', result);
-
-      return { status: response.status, body: result };
     }
   }
 
