@@ -10,7 +10,7 @@
     {#each floors as floor (floor.id)}
       <button
         type="button"
-        class="w-10 h-10 mb-1 text-xs text-gray-500 bg-white rounded-full"
+        class="w-10 h-10 mb-1 text-xs text-gray-500 bg-white rounded-full shadow-md"
         class:selected={selectedFloor.id === floor.id}
         on:click={() => (selectedFloor = floor)}
       >

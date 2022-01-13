@@ -32,6 +32,7 @@
     <table class="w-full mb-4 text-sm border border-collapse table-auto">
       <thead class="bg-gray-50">
         <tr>
+          <th>Id</th>
           <th>Floor</th>
           <th>Job result</th>
           <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
@@ -45,6 +46,7 @@
             class:active={selectedFloor.id === floor.id}
             class="hover:bg-blue-100 hover:cursor-pointer"
           >
+            <td>{floor.tileset}</td>
             <td>{floor.number}</td>
             <td>
               {#if jobResults[floor.jobId]}
@@ -55,7 +57,7 @@
             </td>
             <td class="text-right">
               <button type="button" class="btn btn-secondary" on:click={() => getJobStatus(floor.jobId)}>&#8635;</button>
-              <a class="btn btn-secondary text-blue-600 ml-2" href="/venues/{venueId}/floors/{floor.id}" sveltekit:prefetch>Edit</a>
+              <a class="btn btn-secondary ml-2 text-blue-600" href="/venues/{venueId}/floors/{floor.id}" sveltekit:prefetch>Edit</a>
               <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', floor)}>Delete</button>
             </td>
           </tr>

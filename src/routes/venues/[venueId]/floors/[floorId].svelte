@@ -7,18 +7,12 @@
     const venue: Venue = await response.json();
 
     if (params.floorId === 'new') {
-      const boundingBox = bbox(venue.geometry) as [number, number, number, number];
+      const venueBbox = bbox(venue.geometry) as [number, number, number, number];
+      const sw = [venueBbox[0], venueBbox[1]];
+      const ne = [venueBbox[2], venueBbox[3]];
       const newFloor = {
         ...emptyFloor,
-        georeference: {
-          ...emptyFloor.georeference,
-          points: [
-            // SW
-            { x: 0, y: 0, latitude: boundingBox[0], longitude: boundingBox[1] },
-            // NE
-            { x: 600, y: 400, latitude: boundingBox[2], longitude: boundingBox[3] },
-          ],
-        },
+        georeference: setGeoRefLocData(sw, ne, emptyFloor.georeference),
       };
       return { props: { venue, floor: newFloor } };
     }
@@ -61,10 +55,7 @@
     fitToBounds(venue);
 
     if (floor.id !== 'new') {
-      // Clear map
-      mapComponent.removeSource('sourceId');
-      mapComponent.removeLayer('layerId');
-      mapComponent.removeMarkers();
+      clearMap();
       // add existing
       map.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
       map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
@@ -75,11 +66,6 @@
         .then(res => res.arrayBuffer())
         .then(buf => new File([buf], floor.filename, { type: floor.type }));
     }
-  }
-
-  function fitToBounds(venue: Venue) {
-    const boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
-    map.fitBounds(boundingBox, { animate: false, padding: { top: 150, bottom: 150, left: 150, right: 150 } });
   }
 
   async function setPreviewImage(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
@@ -96,13 +82,7 @@
     const imageH = image.naturalHeight;
 
     // Clear map
-    if (map.getLayer('layerId')) {
-      map.removeLayer('layerId');
-    }
-    if (map.getSource('sourceId')) {
-      map.removeSource('sourceId');
-    }
-    mapComponent.removeMarkers();
+    clearMap();
 
     // update previewImage
     const { type, name: filename } = uploadedImage;
@@ -197,6 +177,18 @@
       body: JSON.stringify(updatedVenue),
     });
   }
+
+  /** Map Helpers*/
+  function fitToBounds(venue: Venue) {
+    const boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
+    map.fitBounds(boundingBox, { animate: false, padding: { top: 150, bottom: 150, left: 150, right: 150 } });
+  }
+
+  function clearMap() {
+    mapComponent.removeLayer('layerId');
+    mapComponent.removeSource('sourceId');
+    mapComponent.removeMarkers();
+  }
 </script>
 
 <div class="flex flex-row flex-1">
@@ -208,32 +200,31 @@
       </h2>
     </div>
 
-    <div class="mb-4 text-sm text-gray-500">
-      <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
-        FloorNumber
-        <input type="text" bind:value={floor.number} class="w-full" required />
-      </label>
-      {#if floor.filename}| {floor.filename}{/if}
-      {#if floor.tileset}| {floor.tileset}{/if}
+    <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
+      FloorNumber
+      <input type="number" bind:value={floor.number} class="w-full" required />
+    </label>
 
-      {#if loadingMessage}
-        <p class="mt-2 text-gray-500">{loadingMessage}</p>
-      {/if}
-      {#if error}
-        <p class="mt-2 text-red-500">error processing image: {error}</p>
-      {/if}
+    <button on:click={() => imageInput.click()} type="button" class="btn btn-secondary w-full py-4 mb-4 text-blue-600 border"
+      >select Image (jpg/png)</button
+    >
+    <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={setPreviewImage} bind:this={imageInput} />
+
+    <div class="p-4 text-xs font-light text-gray-500 bg-gray-200 border">
+      {#if floor.filename} <div class="block mb-1"><span class="mb-4 font-bold">Filename: </span>{floor.filename}</div>{/if}
+      {#if floor.tileset} <span class="font-bold">TilesetId: </span>{floor.tileset}{/if}
     </div>
 
-    <div class="flex justify-between">
-      <div>
-        <button on:click={() => imageInput.click()} type="button" class="btn btn-primary">select Image (jpg/png)</button>
-        <input class="hidden" type="file" accept=".jpg, .jpeg, .png" on:change={setPreviewImage} bind:this={imageInput} />
-      </div>
+    {#if loadingMessage}
+      <p class="mt-2 text-gray-500">{loadingMessage}</p>
+    {/if}
+    {#if error}
+      <p class="mt-2 text-red-500">error processing image: {error}</p>
+    {/if}
 
-      <button disabled={!uploadedImage && !floor.previewImage} on:click={onConvertToGeotiffSelected} type="button" class="btn btn-primary">
-        save
-      </button>
-    </div>
+    <button disabled={!uploadedImage && !floor.previewImage} on:click={onConvertToGeotiffSelected} type="button" class="btn btn-primary w-full mt-8">
+      save
+    </button>
   </div>
 
   <div class="basis-2/3">
