@@ -1,4 +1,5 @@
 <script context="module" lang="ts">
+  import { emptyFloor } from './_empty-floor';
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ params, fetch }) => {
@@ -6,7 +7,20 @@
     const venue: Venue = await response.json();
 
     if (params.floorId === 'new') {
-      return { props: { venue, floor: emptyFloor } };
+      const boundingBox = bbox(venue.geometry) as [number, number, number, number];
+      const newFloor = {
+        ...emptyFloor,
+        georeference: {
+          ...emptyFloor.georeference,
+          points: [
+            // SW
+            { x: 0, y: 0, latitude: boundingBox[0], longitude: boundingBox[1] },
+            // NE
+            { x: 600, y: 400, latitude: boundingBox[2], longitude: boundingBox[3] },
+          ],
+        },
+      };
+      return { props: { venue, floor: newFloor } };
     }
 
     const floor = venue.floors.find(f => f.id === params.floorId);
@@ -21,13 +35,15 @@
 
 <script lang="ts">
   import Map from '$lib/components/maps/Map.svelte';
-  import type { LngLatLike, Map as MapboxMap } from 'mapbox-gl';
-  import type { FloorLevel, MapboxJobStatus, Venue } from '$lib/types';
+  import bbox from '@turf/bbox';
   import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
-  import { emptyFloor } from './_empty-floor';
+
   import { goto } from '$app/navigation';
   import { nanoid } from 'nanoid';
+  import type { LngLatLike, Map as MapboxMap } from 'mapbox-gl';
+  import type { FloorLevel, MapboxJobStatus, Venue } from '$lib/types';
+  import type { LngLatBoundsLike } from 'mapbox-gl';
 
   export let venue: Venue;
   export let floor: FloorLevel;
@@ -39,11 +55,12 @@
   let uploadedImage: File;
   let loadingMessage = '';
   let error: string;
-  let initLat = 4;
-  let initLng = 6;
+  // let initLat = 4;
+  // let initLng = 6;
 
-  async function mapReady(mapInstance: MapboxMap) {
+  async function initMap(mapInstance: MapboxMap) {
     map = mapInstance;
+    fitToBounds(venue);
 
     if (floor.id !== 'new') {
       // Clear map
@@ -60,6 +77,11 @@
         .then(res => res.arrayBuffer())
         .then(buf => new File([buf], floor.filename, { type: floor.type }));
     }
+  }
+
+  function fitToBounds(venue: Venue) {
+    const boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
+    map.fitBounds(boundingBox, { animate: false, padding: { top: 150, bottom: 150, left: 150, right: 150 } });
   }
 
   async function setPreviewImage(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
@@ -86,10 +108,12 @@
     const { type, name: filename } = uploadedImage;
     floor = { ...floor, previewImage: image.src, filename, type };
 
+    const boundingBox = bbox(venue.geometry) as [number, number, number, number];
+
     if (floor.id === 'new') {
       // todo extract from bbox of venue
-      const sw: LngLatLike = [0, 0];
-      const ne: LngLatLike = [initLng, initLat];
+      const sw: LngLatLike = [boundingBox[0], boundingBox[1]];
+      const ne: LngLatLike = [boundingBox[2], boundingBox[3]];
       const initialGeoreference = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
       floor = { ...floor, georeference: initialGeoreference };
     }
@@ -179,11 +203,12 @@
     </div>
 
     <div class="mb-4 text-sm text-gray-500">
-      <p class="px-4 py-2 border-2">
-        floor: {floor.number}
-        {#if floor.filename}|{floor.filename}{/if}
-        {#if floor.tileset}|{floor.tileset}{/if}
-      </p>
+      <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
+        FloorNumber
+        <input type="text" bind:value={floor.number} class="w-full" required />
+      </label>
+      {#if floor.filename}|{floor.filename}{/if}
+      {#if floor.tileset}|{floor.tileset}{/if}
 
       {#if loadingMessage}
         <p class="mt-2 text-gray-500">{loadingMessage}</p>
@@ -206,7 +231,7 @@
   </div>
 
   <div class="basis-2/3">
-    <Map bind:this={mapComponent} bind:sourceCoordinates on:mapReady={e => mapReady(e.detail)} />
+    <Map bind:this={mapComponent} bind:sourceCoordinates on:mapReady={e => initMap(e.detail)} />
     <div class="absolute bottom-0 flex justify-between p-4 py-2 m-4">
       <small>{floor.georeference.bbox}</small>
     </div>

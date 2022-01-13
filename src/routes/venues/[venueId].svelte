@@ -147,6 +147,7 @@
           <input class="w-full" required type="number" name="zoom-level" bind:value={venue.zoomLevel} placeholder="zoom-level" />
         </label>
         <p class="mt-4 mb-2 font-bold">Marker Position</p>
+        <h1>{venue.marker[0]}</h1>
         <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
           Longitude
           <input

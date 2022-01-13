@@ -25,6 +25,6 @@
   }
 </script>
 
-<button type="button" on:click={fitToBounds} class="right-[10px] top-[110px] absolute bg-white rounded-[3px] shadow-md p-[6px] leading-[0]">
-  <span class="material-icons text-[18px]">zoom_out_map</span>
+<button type="button" on:click={fitToBounds} class="right-[10px] top-[110px] absolute bg-[#4264fb] rounded-[3px] shadow-md p-[6px] leading-[0]">
+  <span class="material-icons text-[18px] text-white">zoom_out_map</span>
 </button>

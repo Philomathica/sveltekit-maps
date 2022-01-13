@@ -145,7 +145,14 @@
         Floors
       </h2>
       <div class="flex justify-between">
-        <h3 class="mb-3">Select a Floor for venue <strong>{selectedVenue?.name}</strong></h3>
+        <h3 class="mb-3">
+          {#if selectedVenue.floors.length}
+            Select
+          {:else}
+            Add
+          {/if}
+          a floor for venue <strong>{selectedVenue?.name}</strong>
+        </h3>
         {#await loadingJobs}
           Loading job result...
         {/await}
