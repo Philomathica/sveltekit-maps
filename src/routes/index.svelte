@@ -58,6 +58,7 @@
     }
 
     if (previousSelectedVenue) {
+      console.log('deleted');
       previousSelectedVenue.floors.forEach(floor => {
         map.removeLayer(floor.id);
         map.removeSource(floor.id);
@@ -150,7 +151,7 @@
   <div class="basis-2/3">
     <Map bind:this={map} on:mapReady={e => (mapInstance = e.detail)}>
       {#each venues as venue}
-        <MapMarker lon={venue.marker[0]} lat={venue.marker[1]} on:click={() => (selectedVenue = venue)} />
+        <MapMarker lon={venue.marker[0]} lat={venue.marker[1]} on:markerSelect={() => (selectedVenue = venue)} />
       {/each}
 
       {#if venues.length > 1}
