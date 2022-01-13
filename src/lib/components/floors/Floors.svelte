@@ -15,10 +15,7 @@
     <table class="w-full mb-4 text-sm border border-collapse table-auto">
       <thead class="bg-gray-50">
         <tr>
-          <th>Id</th>
           <th>Floor</th>
-          <th>Filename</th>
-          <th>Tileset</th>
           <th>Job result</th>
           <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
         </tr>
@@ -27,25 +24,24 @@
         {#each floors as floor (floor.id)}
           <tr
             in:fade|local
-            on:click={() => (selectedFloor = floor)}
+            on:click={event => {
+              if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
+                selectedFloor = floor;
+              }
+            }}
             class:active={selectedFloor.id === floor.id}
             class="hover:bg-blue-100 hover:cursor-pointer"
           >
-            <td>{floor.id}</td>
             <td>{floor.number}</td>
-            <td>{floor.filename.split('.')[0]}</td>
-            <td>{floor.tileset.split('.')[1]}</td>
             <td>
               {floor.jobResult}
               {#if floor.jobId}
-                <button type="button" class="text-xl" on:click={() => dispatch('jobResultRequested', floor.jobId)}>&#8635;</button>
+                <button type="button" class="text-xl ml-1" on:click={() => dispatch('jobResultRequested', floor.jobId)}>&#8635;</button>
               {/if}
             </td>
             <td class="text-right">
               <a class="btn btn-secondary text-blue-600" href="/venues/{venueId}/floors/{floor.id}" sveltekit:prefetch>Edit</a>
-              <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click|stopPropagation={() => dispatch('delete', floor)}
-                >Delete
-              </button>
+              <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', floor)}>Delete </button>
             </td>
           </tr>
         {/each}
