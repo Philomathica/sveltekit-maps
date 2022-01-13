@@ -131,7 +131,8 @@
   <div class="basis-1/3 flex flex-col min-w-0 px-8 py-6">
     <div class="">
       <h2 class="mb-4">
-        <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-1"> location_on </span>Venue
+        <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-1">location_on</span>
+        Venue
         <span class="mb-4 font-light text-gray-400">- #{venue.id}</span>
       </h2>
 
@@ -139,6 +140,10 @@
         <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
           Venue Name
           <input class="w-full" required type="text" name="name" bind:value={venue.name} placeholder="name" />
+        </label>
+        <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
+          Zoom level
+          <input class="w-full" required type="number" name="zoom-level" bind:value={venue.zoomLevel} placeholder="zoom-level" />
         </label>
         <p class="mt-4 mb-2 font-bold">Marker Position</p>
         <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
@@ -176,11 +181,13 @@
         <p class="mb-4 font-bold">Click the map to draw a polygon.</p>
         <label for="" class="block mb-4 text-xs font-light text-gray-400 uppercase">Polygon</label>
         <div class="p-4 mb-4 text-xs font-light text-gray-500 bg-gray-200 border">
-          <pre>{JSON.stringify(
+          <pre>
+            {JSON.stringify(
               venue.geometry.coordinates[0].map(c => c[0]),
               null,
               2,
-            )}</pre>
+            )}
+          </pre>
         </div>
         {#if devMode}
           <label for="" class="block mb-4 text-xs font-light text-gray-400 uppercase">Boundingbox</label>

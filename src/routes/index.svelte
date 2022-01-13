@@ -64,17 +64,24 @@
       });
     }
 
+    const minZoomLevel = selectedVenue.zoomLevel;
     selectedVenue.floors.map(floor => {
       // below uses only the previewImage
       // map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
       mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
-      mapInstance.addLayer({ id: floor.id, type: 'raster', source: floor.id, paint: { 'raster-fade-duration': 0 } });
+      mapInstance.addLayer({
+        id: floor.id,
+        type: 'raster',
+        source: floor.id,
+        paint: { 'raster-fade-duration': 0 },
+        minzoom: minZoomLevel,
+      });
       mapInstance.setLayoutProperty(floor.id, 'visibility', 'none');
     });
 
     selectedFloor = selectedVenue.floors[0];
     previousSelectedVenue = selectedVenue;
-    mapInstance.flyTo({ center: selectedVenue.marker, zoom: 17 });
+    mapInstance.flyTo({ center: selectedVenue.marker, zoom: minZoomLevel });
   }
 
   function configureFloor() {

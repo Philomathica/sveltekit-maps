@@ -39,6 +39,7 @@ export interface FloorLevel {
 export interface Venue {
   id: string;
   name: string;
+  zoomLevel: number;
   marker: Position | LongLatLike;
   geometry: Polygon;
   floors: FloorLevel[];
