@@ -20,11 +20,22 @@ export function getPositionInfo(georefData: GeoRefData): number[][] {
   ];
 }
 
-export function setGeoRefData(width: number, height: number, sw: number[], ne: number[]): GeoRefData {
+export function setGeoRefLocData(sw: number[], ne: number[], geoRef: GeoRefData): GeoRefData {
   return {
     points: [
-      { x: 0, y: 0, longitude: sw[0], latitude: sw[1] }, // SW
-      { x: width, y: height, longitude: ne[0], latitude: ne[1] }, // NE
+      { ...geoRef.points[0], longitude: sw[0], latitude: sw[1] }, // SW
+      { ...geoRef.points[1], longitude: ne[0], latitude: ne[1] }, // NE
+    ],
+    bbox: geoRef.bbox,
+  };
+}
+
+export function setGeoRefDimensionData(width: number, height:number, geoRef: GeoRefData){
+  const {longitude, latitude} = geoRef.points[1];
+  return {
+    points: [
+      geoRef.points[0],
+      { x: width, y: height, longitude, latitude}
     ],
     bbox: [0, 0, width, height],
   };

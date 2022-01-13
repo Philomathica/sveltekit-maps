@@ -36,12 +36,12 @@
 <script lang="ts">
   import Map from '$lib/components/maps/Map.svelte';
   import bbox from '@turf/bbox';
-  import { setGeoRefData, getPositionInfo } from '$lib/helpers/georeference';
+  import { setGeoRefLocData, getPositionInfo, setGeoRefDimensionData } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
 
   import { goto } from '$app/navigation';
   import { nanoid } from 'nanoid';
-  import type { LngLatLike, Map as MapboxMap } from 'mapbox-gl';
+  import type { Map as MapboxMap } from 'mapbox-gl';
   import type { FloorLevel, MapboxJobStatus, Venue } from '$lib/types';
   import type { LngLatBoundsLike } from 'mapbox-gl';
 
@@ -55,8 +55,6 @@
   let uploadedImage: File;
   let loadingMessage = '';
   let error: string;
-  // let initLat = 4;
-  // let initLng = 6;
 
   async function initMap(mapInstance: MapboxMap) {
     map = mapInstance;
@@ -94,6 +92,8 @@
     uploadedImage = file;
 
     const image = await convertFileToImage(uploadedImage);
+    const imageW = image.naturalWidth;
+    const imageH = image.naturalHeight;
 
     // Clear map
     if (map.getLayer('layerId')) {
@@ -108,14 +108,16 @@
     const { type, name: filename } = uploadedImage;
     floor = { ...floor, previewImage: image.src, filename, type };
 
-    const boundingBox = bbox(venue.geometry) as [number, number, number, number];
-
     if (floor.id === 'new') {
-      // todo extract from bbox of venue
-      const sw: LngLatLike = [boundingBox[0], boundingBox[1]];
-      const ne: LngLatLike = [boundingBox[2], boundingBox[3]];
-      const initialGeoreference = setGeoRefData(image.naturalWidth, image.naturalHeight, sw, ne);
-      floor = { ...floor, georeference: initialGeoreference };
+      // Extract data from venue to create intialGeoref
+      const venueBbox = bbox(venue.geometry) as [number, number, number, number];
+      const sw = [venueBbox[0], venueBbox[1]];
+      const ne = [venueBbox[2], venueBbox[3]];
+      const initialGeoref = setGeoRefDimensionData(imageW, imageH, setGeoRefLocData(sw, ne, floor.georeference));
+      floor = { ...floor, georeference: initialGeoref };
+    } else {
+      const geoRefWithUpdatedBounds = setGeoRefDimensionData(imageW, imageH, floor.georeference);
+      floor = { ...floor, georeference: geoRefWithUpdatedBounds };
     }
 
     map.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
@@ -180,7 +182,11 @@
       tileset,
       jobId,
       id: floor.id === 'new' ? nanoid(8) : floor.id,
-      georeference: setGeoRefData(floor.georeference.bbox[2], floor.georeference.bbox[3], sourceCoordinates[3], sourceCoordinates[1]),
+      georeference: setGeoRefDimensionData(
+        floor.georeference.bbox[2],
+        floor.georeference.bbox[3],
+        setGeoRefLocData(sourceCoordinates[3], sourceCoordinates[1], floor.georeference),
+      ),
     };
 
     const updatedVenue: Venue = { ...venue, floors: [...venue.floors.filter(f => f.id !== floor.id), floor] };

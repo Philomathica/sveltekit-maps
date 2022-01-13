@@ -14,9 +14,7 @@
   onMount(async () => {
     const mapbox = await getMapbox();
     bounds = new mapbox.LngLatBounds();
-    if (venues.length > 1) {
-      fitToBounds();
-    }
+    if (venues.length > 1) fitToBounds();
   });
 
   function fitToBounds() {
