@@ -1,37 +1,39 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
+  import type mapboxgl from 'mapbox-gl';
+  import type { ImageSource, Map, Marker, PointLike } from 'mapbox-gl';
   import { onDestroy, setContext, createEventDispatcher } from 'svelte';
-  import { mapbox, key, MapboxContext } from './mapbox';
+  import { getMapbox, key, MapboxContext } from './mapbox';
 
   import { GeoRefData, getPositionInfo } from '$lib/helpers/georeference';
 
   import { updateGeoRefDataByMarkers } from '$lib/helpers/mapbox';
   import { browser } from '$app/env';
-  import mapboxgl from 'mapbox-gl';
 
-  const dispatch = createEventDispatcher<{ mapReady: mapbox.Map }>();
+  const dispatch = createEventDispatcher<{ mapReady: Map }>();
 
   setContext<MapboxContext>(key, {
-    getMap: () => map,
+    getMap: () => mapInstance,
   });
 
   export let sourceCoordinates: number[][] = [];
 
-  let map: mapbox.Map;
+  let mapbox: typeof mapboxgl;
+  let mapInstance: Map;
   let container: HTMLElement;
-  let markerSW: mapbox.Marker;
-  let markerNE: mapbox.Marker;
+  let markerSW: Marker;
+  let markerNE: Marker;
 
   export function setMarkerAndListeners(sourceId: string, georefData: GeoRefData) {
-    markerSW = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
+    markerSW = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as PointLike })
       .setLngLat(new mapbox.LngLat(georefData.points[0].longitude, georefData.points[0].latitude))
-      .addTo(map);
+      .addTo(mapInstance);
     markerSW.on('drag', () => updateSourceCoordinates(markerSW, markerNE, sourceId, georefData));
     markerSW.on('dragend', () => updateSourceCoordinates(markerSW, markerNE, sourceId, georefData));
 
-    markerNE = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as mapbox.PointLike })
+    markerNE = new mapbox.Marker({ draggable: true, anchor: 'bottom', offset: [0, 0] as PointLike })
       .setLngLat(new mapbox.LngLat(georefData.points[1].longitude, georefData.points[1].latitude))
-      .addTo(map);
+      .addTo(mapInstance);
     markerNE.on('drag', () => updateSourceCoordinates(markerSW, markerNE, sourceId, georefData));
     markerNE.on('dragend', () => updateSourceCoordinates(markerSW, markerNE, sourceId, georefData));
 
@@ -39,9 +41,9 @@
     updateSourceCoordinates(markerSW, markerNE, sourceId, georefData);
   }
 
-  export function updateSourceCoordinates(markerSW: mapbox.Marker, markerNE: mapbox.Marker, sourceId: string, georefData: GeoRefData) {
+  export function updateSourceCoordinates(markerSW: Marker, markerNE: Marker, sourceId: string, georefData: GeoRefData) {
     sourceCoordinates = getPositionInfo(updateGeoRefDataByMarkers(markerSW, markerNE, georefData));
-    (map.getSource(sourceId) as mapbox.ImageSource).setCoordinates(sourceCoordinates);
+    (mapInstance.getSource(sourceId) as ImageSource).setCoordinates(sourceCoordinates);
   }
 
   export function removeMarkers() {
@@ -50,32 +52,34 @@
   }
 
   export function removeSource(sourceId: string) {
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
   }
 
   export function removeLayer(layerId: string) {
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
   }
 
   export function getMapInstance() {
-    return map;
+    return mapInstance;
   }
 
-  function load() {
-    map = new mapbox.Map({
+  async function load() {
+    mapbox = await getMapbox();
+    mapInstance = new mapbox.Map({
       container,
+      accessToken: mapbox.accessToken,
       style: 'mapbox://styles/mapbox/streets-v9',
     });
 
-    map.on('load', () => {
-      dispatch('mapReady', map);
-      map.addControl(new mapboxgl.NavigationControl());
+    mapInstance.on('load', () => {
+      dispatch('mapReady', mapInstance);
+      mapInstance.addControl(new mapbox.NavigationControl());
     });
   }
 
   onDestroy(() => {
-    if (map) {
-      map.remove();
+    if (mapInstance) {
+      mapInstance.remove();
     }
   });
 </script>
@@ -87,7 +91,7 @@
 </svelte:head>
 
 <div class="w-full h-full" bind:this={container}>
-  {#if map}
+  {#if mapInstance}
     <slot />
   {/if}
 </div>

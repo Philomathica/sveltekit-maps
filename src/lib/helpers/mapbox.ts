@@ -1,28 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import mapbox from 'mapbox-gl';
+import type { Marker } from 'mapbox-gl';
 import type { GeoRefData } from './georeference';
 
-export function getBoundingboxFeatures(points: mapbox.LngLatLike[]): GeoJSON.FeatureCollection {
-  const bounds = points.reduce((r, a) => r.extend(a), new mapbox.LngLatBounds(points[0], points[0]));
-  const bboxP1 = [bounds.getWest(), bounds.getNorth()];
-  const bboxP2 = [bounds.getEast(), bounds.getNorth()];
-  const bboxP3 = [bounds.getEast(), bounds.getSouth()];
-  const bboxP4 = [bounds.getWest(), bounds.getSouth()];
+// export async function getBoundingboxFeatures(points: LngLatLike[]): Promise<GeoJSON.FeatureCollection> {
+//   const mapbox = await getMapbox();
+//   const bounds = points.reduce((r, a) => r.extend(a), new mapbox.LngLatBounds(points[0], points[0]));
+//   const bboxP1 = [bounds.getWest(), bounds.getNorth()];
+//   const bboxP2 = [bounds.getEast(), bounds.getNorth()];
+//   const bboxP3 = [bounds.getEast(), bounds.getSouth()];
+//   const bboxP4 = [bounds.getWest(), bounds.getSouth()];
 
-  return {
-    type: 'FeatureCollection',
-    features: [
-      // NW (initial pos)
-      { type: 'Feature', properties: { description: '1' }, geometry: { type: 'Point', coordinates: bboxP1 } },
-      { type: 'Feature', properties: { description: '2' }, geometry: { type: 'Point', coordinates: bboxP2 } },
-      { type: 'Feature', properties: { description: '3' }, geometry: { type: 'Point', coordinates: bboxP3 } },
-      { type: 'Feature', properties: { description: '4' }, geometry: { type: 'Point', coordinates: bboxP4 } },
-    ],
-  };
-}
+//   return {
+//     type: 'FeatureCollection',
+//     features: [
+//       // NW (initial pos)
+//       { type: 'Feature', properties: { description: '1' }, geometry: { type: 'Point', coordinates: bboxP1 } },
+//       { type: 'Feature', properties: { description: '2' }, geometry: { type: 'Point', coordinates: bboxP2 } },
+//       { type: 'Feature', properties: { description: '3' }, geometry: { type: 'Point', coordinates: bboxP3 } },
+//       { type: 'Feature', properties: { description: '4' }, geometry: { type: 'Point', coordinates: bboxP4 } },
+//     ],
+//   };
+// }
 
-export function updateGeoRefDataByMarkers(markerSW: mapbox.Marker, markerNE: mapbox.Marker, georefData: GeoRefData): GeoRefData {
+export function updateGeoRefDataByMarkers(markerSW: Marker, markerNE: Marker, georefData: GeoRefData): GeoRefData {
   // *****(NE)!
   // *        *
   // *        *

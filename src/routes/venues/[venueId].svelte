@@ -26,21 +26,21 @@
 </script>
 
 <script lang="ts">
-  import type { Map as MapboxMap, LngLatBoundsLike } from 'mapbox-gl';
-  import mapbox from 'mapbox-gl';
+  import type { Map as MapboxMap, LngLatBoundsLike, Marker } from 'mapbox-gl';
   import MapboxDraw from '@mapbox/mapbox-gl-draw';
   import Map from '$lib/components/maps/Map.svelte';
   import center from '@turf/center';
   import bbox from '@turf/bbox';
 
   import type { AllGeoJSON } from '@turf/helpers';
+  import { getMapbox } from '$lib/components/maps/mapbox';
 
   export let venue: Venue;
 
   let devMode: boolean;
   let map: MapboxMap;
   let isSubmitting = false;
-  let markerEl: mapbox.Marker;
+  let markerEl: Marker;
   let boundingBox: LngLatBoundsLike;
 
   async function createVenue() {
@@ -60,6 +60,7 @@
   }
 
   async function initMap(mapInstance: MapboxMap) {
+    const mapbox = await getMapbox();
     devMode = new URLSearchParams(window.location.search).has('devMode');
     map = mapInstance;
 

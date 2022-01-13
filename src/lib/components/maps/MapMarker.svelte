@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { createEventDispatcher, getContext, onDestroy } from 'svelte';
-  import { mapbox, key } from './mapbox';
+  import { createEventDispatcher, getContext, onDestroy, onMount } from 'svelte';
+  import { key, getMapbox } from './mapbox';
 
   const { getMap } = getContext(key);
   const map = getMap();
@@ -8,14 +8,21 @@
   export let lat: number;
   export let lon: number;
 
+  let markerEl: HTMLElement;
+
   const dispatch = createEventDispatcher<{ markerSelect: undefined }>();
 
-  const mapMarker = new mapbox.Marker().setLngLat([lon, lat]).addTo(map);
+  onMount(async () => {
+    const mapbox = await getMapbox();
 
-  const markerEl = mapMarker.getElement();
+    const mapMarker = new mapbox.Marker().setLngLat([lon, lat]).addTo(map);
+    mapMarker.setLngLat([lon, lat]);
 
-  markerEl.addEventListener('click', () => {
-    dispatch('markerSelect', undefined);
+    markerEl = mapMarker.getElement();
+
+    markerEl.addEventListener('click', () => {
+      dispatch('markerSelect', undefined);
+    });
   });
 
   onDestroy(() => {

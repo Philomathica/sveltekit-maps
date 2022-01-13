@@ -1,14 +1,20 @@
-import mapbox from 'mapbox-gl';
-
+import type mapboxgl from 'mapbox-gl';
+import type { Map } from 'mapbox-gl';
 import { mapbox as mapbokTokens } from '../../variables';
 
 export interface MapboxContext {
-  getMap: () => mapbox.Map;
+  getMap: () => Map;
 }
 
+async function getMapbox(): Promise<typeof mapboxgl> {
+  const mapbox = await import('mapbox-gl');
+
+  mapbox.accessToken = mapbokTokens.accessToken;
+
+  return mapbox;
+}
 // https://docs.mapbox.com/help/glossary/access-token/
-mapbox.accessToken = mapbokTokens.accessToken;
 
 const key = {};
 
-export { mapbox, key };
+export { getMapbox, key };
