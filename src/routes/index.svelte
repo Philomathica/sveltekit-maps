@@ -126,12 +126,12 @@
 
 <div class="flex flex-row flex-1">
   <div class="basis-1/3 min-w-0 px-8 py-6">
-    <h2 class="mb-4">Venues</h2>
+    <h2 class="mb-4"><span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-1"> location_on </span>Venues</h2>
     <h3 class="mb-3">Select a venue</h3>
     <Venues {venues} bind:selectedVenue on:delete={e => deleteVenue(e.detail)} />
 
     {#if selectedVenue}
-      <h2 class="my-4">Floors</h2>
+      <h2 class="my-4"><span class="material-icons text-[28px] relative top-[5px] mr-2 text-[#4264fb]"> layers </span>Floors</h2>
       <div class="flex justify-between">
         <h3 class="mb-3">Select a Floor for venue <strong>{selectedVenue?.name}</strong></h3>
         {#await loadingJobs}

@@ -172,7 +172,10 @@
 <div class="flex flex-row flex-1">
   <div class="basis-1/3 min-w-0 px-8 py-6">
     <div>
-      <h2 class="mb-4">Georeference image</h2>
+      <h2 class="mb-4">
+        <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-1">layers</span>Floor
+        <span class="mb-4 font-light text-gray-400">- #{floor.id}</span>
+      </h2>
     </div>
 
     <div class="mb-4 text-sm text-gray-500">

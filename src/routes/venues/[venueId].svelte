@@ -130,8 +130,10 @@
 <div class="flex flex-row flex-1">
   <div class="basis-1/3 flex flex-col min-w-0 px-8 py-6">
     <div class="">
-      <h2 class="mb-4">Venue</h2>
-      <p class="mb-4">#{venue.id}</p>
+      <h2 class="mb-4">
+        <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-1"> location_on </span>Venue
+        <span class="mb-4 font-light text-gray-400">- #{venue.id}</span>
+      </h2>
 
       <form on:submit|preventDefault={createVenue} class="flex flex-col" autocomplete="off">
         <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
