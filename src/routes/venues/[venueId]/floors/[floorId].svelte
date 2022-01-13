@@ -213,8 +213,8 @@
         FloorNumber
         <input type="text" bind:value={floor.number} class="w-full" required />
       </label>
-      {#if floor.filename}|{floor.filename}{/if}
-      {#if floor.tileset}|{floor.tileset}{/if}
+      {#if floor.filename}| {floor.filename}{/if}
+      {#if floor.tileset}| {floor.tileset}{/if}
 
       {#if loadingMessage}
         <p class="mt-2 text-gray-500">{loadingMessage}</p>

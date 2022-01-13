@@ -100,11 +100,15 @@
 
     const updatedVenue = { ...selectedVenue, floors: selectedVenue.floors.filter(f => f.id !== floor.id) };
 
-    await fetch(`/api/venues/${selectedVenue.id}`, {
+    const response = await fetch(`/api/venues/${selectedVenue.id}`, {
       headers: { 'Content-Type': 'application/json' },
       method: 'PUT',
       body: JSON.stringify(updatedVenue),
     });
+
+    if (!response.ok) {
+      return window.alert(`Error deleting floor: ${await response.text()}`);
+    }
 
     venues = [...venues.filter(v => v.id !== updatedVenue.id), updatedVenue];
     selectedVenue = updatedVenue;
@@ -125,7 +129,6 @@
       <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-2">location_on</span>
       Venues
     </h2>
-    <h3 class="mb-3">Select a venue</h3>
     <Venues {venues} bind:selectedVenue on:delete={e => deleteVenue(e.detail)} />
 
     {#if selectedVenue}

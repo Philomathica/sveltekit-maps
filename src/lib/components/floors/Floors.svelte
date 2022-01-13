@@ -9,7 +9,7 @@
   export let venueId: string;
   export let selectedFloor: FloorLevel | undefined;
 
-  $: sortedFloors = floors.sort((a, b) => a.number - b.number);
+  $: floors.sort((a, b) => a.number - b.number);
 
   let jobResults: Record<string, string> = {};
 
@@ -38,7 +38,7 @@
         </tr>
       </thead>
       <tbody class="bg-white">
-        {#each sortedFloors as floor (floor.id)}
+        {#each floors as floor (floor.id)}
           <tr
             in:fade|local
             on:click={e => updateSelectedFloorOnRowClick(e, floor)}

@@ -8,39 +8,43 @@
   export let venues: Venue[] = [];
   export let selectedVenue: Venue | undefined;
 
-  $: sortedVenues = venues.sort((a, b) => a.name.localeCompare(b.name));
+  $: venues.sort((a, b) => a.name.localeCompare(b.name));
 </script>
 
-<div class="overflow-x-auto">
-  <table class="w-full mb-4 text-sm border border-collapse table-auto">
-    <thead class="bg-gray-50">
-      <tr>
-        <th>Name</th>
-        <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-      </tr>
-    </thead>
-    <tbody class="bg-white">
-      {#each sortedVenues as venue (venue.id)}
-        <tr
-          in:fade|local
-          on:click={event => {
-            if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
-              selectedVenue = venue;
-            }
-          }}
-          class:active={selectedVenue?.id === venue.id}
-          class="hover:bg-blue-100 hover:cursor-pointer"
-        >
-          <td>{venue.name}</td>
-          <td class="text-right">
-            <a class="btn btn-secondary text-blue-600" href="/venues/{venue.id}" sveltekit:prefetch>Edit</a>
-            <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', venue)}> Delete </button>
-          </td>
+{#if venues.length}
+  <h3 class="mb-3">Select a venue</h3>
+
+  <div class="overflow-x-auto">
+    <table class="w-full mb-4 text-sm border border-collapse table-auto">
+      <thead class="bg-gray-50">
+        <tr>
+          <th>Name</th>
+          <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
         </tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody class="bg-white">
+        {#each venues as venue (venue.id)}
+          <tr
+            in:fade|local
+            on:click={event => {
+              if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
+                selectedVenue = venue;
+              }
+            }}
+            class:active={selectedVenue?.id === venue.id}
+            class="hover:bg-blue-100 hover:cursor-pointer"
+          >
+            <td>{venue.name}</td>
+            <td class="text-right">
+              <a class="btn btn-secondary text-blue-600" href="/venues/{venue.id}" sveltekit:prefetch>Edit</a>
+              <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', venue)}> Delete </button>
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+{/if}
 
 <a class="btn btn-primary inline-block mb-6" href="/venues/new">add venue</a>
 

@@ -30,13 +30,10 @@ export function setGeoRefLocData(sw: number[], ne: number[], geoRef: GeoRefData)
   };
 }
 
-export function setGeoRefDimensionData(width: number, height:number, geoRef: GeoRefData){
-  const {longitude, latitude} = geoRef.points[1];
+export function setGeoRefDimensionData(width: number, height: number, geoRef: GeoRefData) {
+  const { longitude, latitude } = geoRef.points[1];
   return {
-    points: [
-      geoRef.points[0],
-      { x: width, y: height, longitude, latitude}
-    ],
+    points: [geoRef.points[0], { x: width, y: height, longitude, latitude }],
     bbox: [0, 0, width, height],
   };
 }
