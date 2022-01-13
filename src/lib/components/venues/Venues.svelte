@@ -7,6 +7,8 @@
 
   export let venues: Venue[] = [];
   export let selectedVenue: Venue | undefined;
+
+  $: sortedVenues = venues.sort((a, b) => a.name.localeCompare(b.name));
 </script>
 
 <div class="overflow-x-auto">
@@ -18,7 +20,7 @@
       </tr>
     </thead>
     <tbody class="bg-white">
-      {#each venues as venue (venue.id)}
+      {#each sortedVenues as venue (venue.id)}
         <tr
           in:fade|local
           on:click={event => {

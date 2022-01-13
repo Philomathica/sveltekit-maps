@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FloorLevel } from '$lib/types';
+  import type { FloorLevel, MapboxJobStatus } from '$lib/types';
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
 
@@ -8,6 +8,23 @@
   export let floors: FloorLevel[] = [];
   export let venueId: string;
   export let selectedFloor: FloorLevel | undefined;
+
+  $: sortedFloors = floors.sort((a, b) => a.number - b.number);
+
+  let jobResults: Record<string, string> = {};
+
+  async function getJobStatus(jobId: string) {
+    jobResults[jobId] = 'Loading job status';
+    const response = await fetch(`/api/tilesets/jobs/${jobId}`);
+    const result: MapboxJobStatus = await response.json();
+    jobResults[jobId] = result.error ? `error: ${result.error}` : result.progress === 0 ? 'Job in progress' : 'Job finished';
+  }
+
+  function updateSelectedFloorOnRowClick(event: MouseEvent & { currentTarget: EventTarget & HTMLTableRowElement }, floor: FloorLevel) {
+    if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
+      selectedFloor = floor;
+    }
+  }
 </script>
 
 {#if selectedFloor}
@@ -21,27 +38,25 @@
         </tr>
       </thead>
       <tbody class="bg-white">
-        {#each floors as floor (floor.id)}
+        {#each sortedFloors as floor (floor.id)}
           <tr
             in:fade|local
-            on:click={event => {
-              if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
-                selectedFloor = floor;
-              }
-            }}
+            on:click={e => updateSelectedFloorOnRowClick(e, floor)}
             class:active={selectedFloor.id === floor.id}
             class="hover:bg-blue-100 hover:cursor-pointer"
           >
             <td>{floor.number}</td>
             <td>
-              {floor.jobResult}
-              {#if floor.jobId}
-                <button type="button" class="text-xl ml-1" on:click={() => dispatch('jobResultRequested', floor.jobId)}>&#8635;</button>
+              {#if jobResults[floor.jobId]}
+                {jobResults[floor.jobId]}
+              {:else}
+                Request job status
               {/if}
             </td>
             <td class="text-right">
-              <a class="btn btn-secondary text-blue-600" href="/venues/{venueId}/floors/{floor.id}" sveltekit:prefetch>Edit</a>
-              <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', floor)}>Delete </button>
+              <button type="button" class="btn btn-secondary" on:click={() => getJobStatus(floor.jobId)}>&#8635;</button>
+              <a class="btn btn-secondary text-blue-600 ml-2" href="/venues/{venueId}/floors/{floor.id}" sveltekit:prefetch>Edit</a>
+              <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', floor)}>Delete</button>
             </td>
           </tr>
         {/each}

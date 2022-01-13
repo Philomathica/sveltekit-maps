@@ -5,39 +5,18 @@
     const response = await fetch('/api/venues');
     const venues: Venue[] = await response.json();
 
-    const venuesWithJobResult: Venue[] = await Promise.all(
-      venues.map(async venue => ({
-        ...venue,
-        floors: await Promise.all(
-          venue.floors.map(async floor => {
-            let jobResult = 'No job id';
-
-            if (!floor.jobId) {
-              return { ...floor, jobResult };
-            }
-
-            const response = await fetch(`/api/tilesets/jobs/${floor.jobId}`);
-            const result: MapboxJobStatus = await response.json();
-
-            return { ...floor, jobResult: result.complete ? 'Job succeeded' : result.error };
-          }),
-        ),
-      })),
-    );
-
-    return { props: { venues: venuesWithJobResult } };
+    return { props: { venues } };
   };
 </script>
 
 <script lang="ts">
   import type { Map as MapboxMap } from 'mapbox-gl';
-  import type { FloorLevel, MapboxJobStatus, Venue } from '$lib/types';
+  import type { FloorLevel, Venue } from '$lib/types';
   import Map from '$lib/components/maps/Map.svelte';
   import Floor from '$lib/components/floors/Floors.svelte';
   import FloorControl from '$lib/components/floors/FloorControl.svelte';
   import Venues from '$lib/components/venues/Venues.svelte';
   import MapMarker from '$lib/components/maps/MapMarker.svelte';
-  import { invalidate } from '$app/navigation';
   import FitToVenuesBtn from '$lib/components/maps/FitToVenuesBtn.svelte';
 
   export let venues: Venue[];
@@ -105,6 +84,12 @@
     }
 
     venues = venues.filter(v => v.id !== venue.id);
+    selectedVenue = venues.length > 0 ? venues[0] : undefined;
+
+    venue.floors.forEach(floor => {
+      map.removeLayer(floor.id);
+      map.removeSource(floor.id);
+    });
   }
 
   async function deleteFloor(floor: FloorLevel) {
@@ -122,7 +107,11 @@
     });
 
     venues = [...venues.filter(v => v.id !== updatedVenue.id), updatedVenue];
-    selectedVenue = venues.length > 0 ? venues[0] : undefined;
+    selectedVenue = updatedVenue;
+    selectedFloor = selectedVenue.floors.length ? selectedVenue.floors[0] : undefined;
+
+    map.removeLayer(floor.id);
+    map.removeSource(floor.id);
   }
 </script>
 
@@ -157,13 +146,7 @@
           Loading job result...
         {/await}
       </div>
-      <Floor
-        bind:selectedFloor
-        floors={selectedVenue.floors}
-        venueId={selectedVenue.id}
-        on:delete={e => deleteFloor(e.detail)}
-        on:jobResultRequested={e => (loadingJobs = invalidate(`/api/tilesets/jobs/${e.detail}`))}
-      />
+      <Floor bind:selectedFloor floors={selectedVenue.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
     {/if}
   </div>
 
