@@ -80,9 +80,12 @@
       },
     });
     map.addControl(draw, 'top-left');
-    draw.add(venue.geometry);
-    boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
-    map.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 } });
+
+    if (venue.id !== 'new') {
+      draw.add(venue.geometry);
+      boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
+      map.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 } });
+    }
 
     map.on('draw.create', updateArea);
     map.on('draw.delete', updateArea);
