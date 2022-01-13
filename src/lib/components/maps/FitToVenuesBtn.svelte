@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { getContext, onMount } from 'svelte';
   import type { Venue } from '$lib/types';
   import { key } from './mapbox';
   import { LngLatBounds } from 'mapbox-gl';
@@ -11,8 +11,14 @@
   export let venues: Venue[];
   function fitToBounds() {
     venues.map(v => bounds.extend(v.marker));
-    map.fitBounds(bounds, { padding: { top: 50, bottom: 50, left: 50, right: 50 } });
+    map.fitBounds(bounds, { padding: { top: 150, bottom: 150, left: 150, right: 150 } });
   }
+
+  onMount(() => {
+    if (venues.length > 1) {
+      fitToBounds();
+    }
+  });
 </script>
 
 <button type="button" on:click={fitToBounds} class="right-[10px] top-[110px] absolute bg-white rounded-[3px] shadow-md p-[6px] leading-[0]">

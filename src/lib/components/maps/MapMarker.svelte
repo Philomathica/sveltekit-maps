@@ -13,7 +13,8 @@
   const mapMarker = new mapbox.Marker().setLngLat([lon, lat]).addTo(map);
 
   const markerEl = mapMarker.getElement();
-  markerEl.addEventListener('markerSelect', () => {
+
+  markerEl.addEventListener('click', () => {
     dispatch('markerSelect', undefined);
   });
 
