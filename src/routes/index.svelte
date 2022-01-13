@@ -153,7 +153,7 @@
         <MapMarker lon={venue.marker[0]} lat={venue.marker[1]} on:click={() => (selectedVenue = venue)} />
       {/each}
 
-      {#if venues.length}
+      {#if venues.length > 1}
         <FitToVenuesBtn {venues} />
       {/if}
     </Map>
