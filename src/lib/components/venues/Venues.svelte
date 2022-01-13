@@ -15,7 +15,6 @@
       <tr>
         <th>Id</th>
         <th>Name</th>
-        <th>LongLat</th>
         <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
       </tr>
     </thead>
@@ -27,9 +26,8 @@
           class:active={selectedVenue?.id === venue.id}
           class="hover:bg-blue-100 hover:cursor-pointer"
         >
-          <td>{venue.id}</td>
+          <td>#{venue.id}</td>
           <td>{venue.name}</td>
-          <td>{venue.marker}</td>
           <td class="text-right">
             <a class="btn btn-secondary text-blue-600" href="/venues/{venue.id}" sveltekit:prefetch>Edit</a>
             <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click|stopPropagation={() => dispatch('delete', venue)}>
