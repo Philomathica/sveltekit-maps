@@ -3,7 +3,7 @@
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ params, fetch }) => {
-    const response = await fetch(`/api/venues/${params.venueId}`);
+    const response = await fetch(`/api/venues/${params.venueId}?withImage=true`);
     const venue: Venue = await response.json();
 
     if (params.floorId === 'new') {
@@ -62,6 +62,9 @@
       mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
 
       // dataURLtoFile
+      if (!floor.previewImage) {
+        return;
+      }
       uploadedImage = await fetch(floor.previewImage)
         .then(res => res.arrayBuffer())
         .then(buf => new File([buf], floor.filename, { type: floor.type }));

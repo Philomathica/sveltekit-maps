@@ -1,9 +1,10 @@
 <script lang="ts">
+  import type { Map } from 'mapbox-gl';
   import { createEventDispatcher, getContext, onDestroy, onMount } from 'svelte';
   import { key, getMapbox } from './mapbox';
 
   const { getMap } = getContext(key);
-  const map = getMap();
+  const map: Map = getMap();
 
   export let lat: number;
   export let lon: number;
