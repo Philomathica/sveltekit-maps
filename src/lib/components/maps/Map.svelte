@@ -2,13 +2,12 @@
   /* eslint-disable @typescript-eslint/no-explicit-any */
   import type mapboxgl from 'mapbox-gl';
   import type { ImageSource, Map, Marker, PointLike } from 'mapbox-gl';
-  import { onDestroy, setContext, createEventDispatcher } from 'svelte';
+  import { onDestroy, setContext, createEventDispatcher, onMount } from 'svelte';
   import { getMapbox, key, MapboxContext } from './mapbox';
 
   import { GeoRefData, getPositionInfo } from '$lib/helpers/georeference';
 
   import { updateGeoRefDataByMarkers } from '$lib/helpers/mapbox';
-  import { browser } from '$app/env';
 
   const dispatch = createEventDispatcher<{ mapReady: Map }>();
 
@@ -63,7 +62,7 @@
     return mapInstance;
   }
 
-  async function load() {
+  onMount(async () => {
     mapbox = await getMapbox();
     mapInstance = new mapbox.Map({
       container,
@@ -75,7 +74,7 @@
       dispatch('mapReady', mapInstance);
       mapInstance.addControl(new mapbox.NavigationControl());
     });
-  }
+  });
 
   onDestroy(() => {
     if (mapInstance) {
@@ -83,12 +82,6 @@
     }
   });
 </script>
-
-<svelte:head>
-  {#if browser}
-    <link rel="stylesheet" href="https://unpkg.com/mapbox-gl/dist/mapbox-gl.css" on:load={load} />
-  {/if}
-</svelte:head>
 
 <div class="w-full h-full" bind:this={container}>
   {#if mapInstance}
