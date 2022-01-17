@@ -32,7 +32,6 @@
     <table class="w-full mb-4 text-sm border border-collapse table-auto">
       <thead class="bg-gray-50">
         <tr>
-          <th>Id</th>
           <th>Floor</th>
           <th>Job result</th>
           <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
@@ -46,7 +45,6 @@
             class:active={selectedFloor.id === floor.id}
             class="hover:bg-blue-100 hover:cursor-pointer"
           >
-            <td>{floor.tileset}</td>
             <td>{floor.number}</td>
             <td>
               {#if jobResults[floor.jobId]}

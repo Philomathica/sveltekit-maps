@@ -67,7 +67,7 @@
     // Marker
     markerEl = new mapbox.Marker({ draggable: true });
     markerEl.setLngLat(venue.marker).addTo(map);
-    map.flyTo({ center: venue.marker });
+    map.jumpTo({ center: venue.marker });
     markerEl.on('dragend', () => {
       const { lng, lat } = markerEl.getLngLat();
       venue.marker = [lng, lat];
@@ -85,7 +85,7 @@
     if (venue.id !== 'new') {
       draw.add(venue.geometry);
       boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
-      map.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 } });
+      map.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 }, animate: false });
     }
 
     map.on('draw.create', updateArea);
@@ -159,7 +159,7 @@
             placeholder="lng"
             bind:value={venue.marker[0]}
             on:change={() => {
-              map.flyTo({ center: venue.marker });
+              map.jumpTo({ center: venue.marker });
               markerEl.setLngLat(venue.marker);
             }}
           />
@@ -175,7 +175,7 @@
             placeholder="lat"
             bind:value={venue.marker[1]}
             on:change={() => {
-              map.flyTo({ center: venue.marker });
+              map.jumpTo({ center: venue.marker });
               markerEl.setLngLat(venue.marker);
             }}
           />
