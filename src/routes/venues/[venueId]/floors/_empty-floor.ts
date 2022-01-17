@@ -19,4 +19,5 @@ export const emptyFloor: FloorLevel = {
   jobResult: '',
   status: '',
   type: '',
+  places: [],
 };

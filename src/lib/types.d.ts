@@ -34,6 +34,7 @@ export interface FloorLevel {
   previewImage?: string;
   type: string;
   georeference: Georeference;
+  places: Place[];
 }
 
 export interface Venue {
@@ -55,4 +56,9 @@ export interface MapboxJobStatus {
   tileset: string;
   owner: string;
   progress: number;
+}
+
+export interface Place {
+  id: string;
+  name: string;
 }

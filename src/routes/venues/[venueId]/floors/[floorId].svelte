@@ -6,6 +6,10 @@
     const response = await fetch(`/api/venues/${params.venueId}?withImage=true`);
     const venue: Venue = await response.json();
 
+    if (!venue) {
+      return { status: 404 };
+    }
+
     if (params.floorId === 'new') {
       const venueBbox = bbox(venue.geometry) as [number, number, number, number];
       const sw = [venueBbox[0], venueBbox[1]];
@@ -19,7 +23,7 @@
 
     const floor = venue.floors.find(f => f.id === params.floorId);
 
-    if (!venue || !floor) {
+    if (!floor) {
       return { status: 404 };
     }
 

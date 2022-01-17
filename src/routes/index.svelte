@@ -11,25 +11,28 @@
 
 <script lang="ts">
   import type { Map as MapboxMap } from 'mapbox-gl';
-  import type { FloorLevel, Venue } from '$lib/types';
+  import type { FloorLevel, Place, Venue } from '$lib/types';
   import Map from '$lib/components/maps/Map.svelte';
   import Floor from '$lib/components/floors/Floors.svelte';
   import FloorControl from '$lib/components/floors/FloorControl.svelte';
   import Venues from '$lib/components/venues/Venues.svelte';
   import MapMarker from '$lib/components/maps/MapMarker.svelte';
   import FitToVenuesBtn from '$lib/components/maps/FitToVenuesBtn.svelte';
+  import Places from '$lib/components/places/Places.svelte';
 
   export let venues: Venue[];
 
   let selectedVenue: Venue | undefined;
   let previousSelectedVenue: Venue | undefined;
   let selectedFloor: FloorLevel | undefined;
+  let selectedPlace: Place | undefined;
   let mapInstance: MapboxMap;
   let map: Map;
   let loadingJobs: Promise<any>;
 
   $: mapInstance && selectedVenue && configureVenue();
   $: mapInstance && selectedFloor && configureFloor();
+  $: mapInstance && selectedPlace && configurePlace();
 
   function configureVenue() {
     if (!selectedVenue) {
@@ -58,7 +61,8 @@
       mapInstance.setLayoutProperty(floor.id, 'visibility', 'none');
     });
 
-    selectedFloor = selectedVenue.floors[0];
+    selectedVenue?.floors.sort((a, b) => a.number - b.number);
+    selectedFloor = selectedVenue.floors.find(f => f.id === selectedFloor?.id) ?? selectedVenue.floors[0];
     previousSelectedVenue = selectedVenue;
     mapInstance.flyTo({ center: selectedVenue.marker, zoom: minZoomLevel });
   }
@@ -68,7 +72,15 @@
       return;
     }
 
+    selectedPlace = selectedFloor.places[0];
     selectedVenue.floors.map(f => mapInstance.setLayoutProperty(f.id, 'visibility', 'none'));
+    mapInstance.setLayoutProperty(selectedFloor.id, 'visibility', 'visible');
+  }
+
+  async function configurePlace() {
+    if (!selectedVenue || !selectedFloor || !selectedPlace) {
+      return;
+    }
     mapInstance.setLayoutProperty(selectedFloor.id, 'visibility', 'visible');
   }
 
@@ -86,6 +98,7 @@
     venues = venues.filter(v => v.id !== venue.id);
     selectedVenue = venues.length > 0 ? venues[0] : undefined;
 
+    selectedVenue?.floors.sort((a, b) => a.number - b.number);
     venue.floors.forEach(floor => {
       map.removeLayer(floor.id);
       map.removeSource(floor.id);
@@ -117,6 +130,33 @@
     map.removeLayer(floor.id);
     map.removeSource(floor.id);
   }
+
+  async function deletePlace(place: Place) {
+    const confirm = window.confirm(`Are you sure you want to delete place ${place.name}?`);
+    if (!confirm || !selectedVenue || !selectedFloor) {
+      return;
+    }
+
+    const selectedFloorId = selectedFloor.id;
+    const updatedFloor = { ...selectedFloor, places: selectedFloor.places.filter(p => p.id !== place.id) };
+    const updatedVenue = { ...selectedVenue, floors: [...selectedVenue.floors.filter(f => f.id !== selectedFloorId), updatedFloor] };
+
+    const response = await fetch(`/api/venues/${selectedVenue.id}`, {
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+      body: JSON.stringify(updatedVenue),
+    });
+
+    if (!response.ok) {
+      return window.alert(`Error deleting place: ${await response.text()}`);
+    }
+
+    venues = [...venues.filter(v => v.id !== updatedVenue.id), updatedVenue];
+    selectedVenue = updatedVenue;
+    selectedFloor = updatedFloor;
+    // selectedFloor.sort((a, b) => a.number - b-number)
+    selectedPlace = selectedFloor.places.length ? selectedFloor.places[0] : undefined;
+  }
 </script>
 
 <svelte:head>
@@ -143,13 +183,37 @@
           {:else}
             Add
           {/if}
-          a floor for venue <strong>{selectedVenue?.name}</strong>
+          a floor for venue <strong>{selectedVenue.name}</strong>
         </h3>
         {#await loadingJobs}
           Loading job result...
         {/await}
       </div>
       <Floor bind:selectedFloor floors={selectedVenue.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
+    {/if}
+
+    {#if selectedVenue && selectedFloor}
+      <h2 class="my-4">
+        <span class="material-icons text-[28px] relative top-[5px] mr-2 text-[#4264fb]">layers</span>
+        Places
+      </h2>
+      <div class="flex justify-between">
+        <h3 class="mb-3">
+          {#if selectedFloor.places.length}
+            Select
+          {:else}
+            Add
+          {/if}
+          a place for floor number <strong>{selectedFloor.number}</strong>
+        </h3>
+      </div>
+      <Places
+        bind:selectedPlace
+        places={selectedFloor.places}
+        floorId={selectedFloor.id}
+        venueId={selectedVenue.id}
+        on:delete={e => deletePlace(e.detail)}
+      />
     {/if}
   </div>
 
