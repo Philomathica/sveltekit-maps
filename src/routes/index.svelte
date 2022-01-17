@@ -48,8 +48,8 @@
     const minZoomLevel = selectedVenue.zoomLevel;
     selectedVenue.floors.map(floor => {
       // below uses only the previewImage
-      mapInstance.addSource(floor.id, { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
-      // mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
+      // mapInstance.addSource(floor.id, { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
+      mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
       mapInstance.addLayer({
         id: floor.id,
         type: 'raster',
