@@ -10,7 +10,7 @@
 </script>
 
 <script lang="ts">
-  import type { Map as MapboxMap } from 'mapbox-gl';
+  import type { LngLatBoundsLike, Map as MapboxMap } from 'mapbox-gl';
   import type { FloorLevel, Venue } from '$lib/types';
   import Map from '$lib/components/maps/Map.svelte';
   import Floor from '$lib/components/floors/Floors.svelte';
@@ -18,6 +18,7 @@
   import Venues from '$lib/components/venues/Venues.svelte';
   import MapMarker from '$lib/components/maps/MapMarker.svelte';
   import FitToVenuesBtn from '$lib/components/maps/FitToVenuesBtn.svelte';
+  import bbox from '@turf/bbox';
 
   export let venues: Venue[];
 
@@ -60,7 +61,8 @@
 
     selectedFloor = selectedVenue.floors[0];
     previousSelectedVenue = selectedVenue;
-    mapInstance.flyTo({ center: selectedVenue.marker, zoom: minZoomLevel });
+    const boundingBox = bbox(selectedVenue.geometry) as LngLatBoundsLike;
+    mapInstance.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 }, animate: true, screenSpeed: 2 });
   }
 
   function configureFloor() {
