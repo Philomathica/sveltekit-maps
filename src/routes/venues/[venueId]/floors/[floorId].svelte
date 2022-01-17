@@ -3,8 +3,8 @@
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ params, fetch }) => {
-    const response = await fetch(`/api/venues/${params.venueId}?withImage=true`);
-    const venue: Venue = await response.json();
+    const venueResponse = await fetch(`/api/venues/${params.venueId}`);
+    const venue = await venueResponse.json();
 
     if (!venue) {
       return { status: 404 };
@@ -21,7 +21,8 @@
       return { props: { venue, floor: newFloor } };
     }
 
-    const floor = venue.floors.find(f => f.id === params.floorId);
+    const floorResponse = await fetch(`/api/venues/${params.venueId}/floors/${params.floorId}?withImage=true`);
+    const floor = await floorResponse.json();
 
     if (!floor) {
       return { status: 404 };
@@ -38,13 +39,12 @@
   import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
 
   import { goto } from '$app/navigation';
-  import { nanoid } from 'nanoid';
   import type { Map as MapboxMap } from 'mapbox-gl';
-  import type { FloorLevel, MapboxJobStatus, Venue } from '$lib/types';
+  import type { Floor, MapboxJobStatus, Venue } from '$lib/types';
   import type { LngLatBoundsLike } from 'mapbox-gl';
 
   export let venue: Venue;
-  export let floor: FloorLevel;
+  export let floor: Floor;
 
   let mapComponent: Map;
   let map: MapboxMap;
@@ -168,7 +168,6 @@
       ...floor,
       tileset,
       jobId,
-      id: floor.id === 'new' ? nanoid(8) : floor.id,
       georeference: setGeoRefDimensionData(
         floor.georeference.bbox[2],
         floor.georeference.bbox[3],
@@ -176,13 +175,19 @@
       ),
     };
 
-    const updatedVenue: Venue = { ...venue, floors: [...venue.floors.filter(f => f.id !== floor.id), floor] };
-
-    await fetch(`/api/venues/${venue.id}`, {
-      headers: { 'Content-Type': 'application/json' },
-      method: 'PUT',
-      body: JSON.stringify(updatedVenue),
-    });
+    if (floor.id === 'new') {
+      await fetch(`/api/venues/${venue.id}/floors`, {
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        body: JSON.stringify(floor),
+      });
+    } else {
+      await fetch(`/api/venues/${venue.id}/floors/${floor.id}`, {
+        headers: { 'Content-Type': 'application/json' },
+        method: 'PUT',
+        body: JSON.stringify(floor),
+      });
+    }
   }
 
   /** Map Helpers*/

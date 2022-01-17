@@ -1,18 +1,20 @@
 <script lang="ts">
-  import type { FloorLevel } from '$lib/types';
+  import type { Floor } from '$lib/types';
 
-  export let floors: FloorLevel[] = [];
-  export let selectedFloor: FloorLevel | undefined;
+  export let floors: Floor[] = [];
+  export let selectedFloorId: string | undefined;
+
+  $: sortedFloors = [...floors].sort((a, b) => b.number - a.number);
 </script>
 
-{#if selectedFloor}
+{#if selectedFloorId}
   <div class="right-10 bottom-10 absolute z-30 flex flex-col">
-    {#each floors as floor (floor.id)}
+    {#each sortedFloors as floor (floor.id)}
       <button
         type="button"
         class="w-10 h-10 mb-1 text-xs text-gray-500 bg-white rounded-full shadow-md"
-        class:selected={selectedFloor.id === floor.id}
-        on:click={() => (selectedFloor = floor)}
+        class:selected={selectedFloorId === floor.id}
+        on:click={() => (selectedFloorId = floor.id)}
       >
         {floor.number}
       </button>

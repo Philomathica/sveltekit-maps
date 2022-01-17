@@ -8,18 +8,21 @@
   export let places: Place[] = [];
   export let venueId: string;
   export let floorId: string;
-  export let selectedPlace: Place | undefined;
+  export let selectedPlaceId = '';
+
+  $: sortedPlaces = [...places].sort((a, b) => a.name.localeCompare(b.name));
+  $: selectedPlaceId = sortedPlaces[0]?.id;
 
   $: places.sort((a, b) => a.name.localeCompare(b.name));
 
-  function updateSelectedPlaceOnRowClick(event: MouseEvent & { currentTarget: EventTarget & HTMLTableRowElement }, place: Place) {
+  function updateSelectedPlaceOnRowClick(event: MouseEvent & { currentTarget: EventTarget & HTMLTableRowElement }, placeId: string) {
     if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
-      selectedPlace = place;
+      selectedPlaceId = placeId;
     }
   }
 </script>
 
-{#if selectedPlace}
+{#if selectedPlaceId}
   <div class="overflow-x-auto">
     <table class="w-full mb-4 text-sm border border-collapse table-auto">
       <thead class="bg-gray-50">
@@ -32,8 +35,8 @@
         {#each places as place (place.id)}
           <tr
             in:fade|local
-            on:click={e => updateSelectedPlaceOnRowClick(e, place)}
-            class:active={selectedPlace.id === place.id}
+            on:click={e => updateSelectedPlaceOnRowClick(e, place.id)}
+            class:active={selectedPlaceId === place.id}
             class="hover:bg-blue-100 hover:cursor-pointer"
           >
             <td>{place.name}</td>

@@ -1,7 +1,8 @@
-import type { FloorLevel } from '$lib/types';
+import type { Floor } from '$lib/types';
 
-export const emptyFloor: FloorLevel = {
+export const emptyFloor: Floor = {
   id: 'new',
+  venueId: '',
   number: 0,
   filename: '',
   previewImage: '',

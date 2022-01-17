@@ -23,8 +23,17 @@ export interface Georeference {
   bbox: number[];
 }
 
-export interface FloorLevel {
+export interface Venue {
   id: string;
+  name: string;
+  zoomLevel: number;
+  marker: Position | LongLatLike;
+  geometry: Polygon;
+}
+
+export interface Floor {
+  id: string;
+  venueId: string;
   number: number;
   status: string;
   filename: string;
@@ -37,13 +46,10 @@ export interface FloorLevel {
   places: Place[];
 }
 
-export interface Venue {
+export interface Place {
   id: string;
+  floorId: string;
   name: string;
-  zoomLevel: number;
-  marker: Position | LongLatLike;
-  geometry: Polygon;
-  floors: FloorLevel[];
 }
 
 export interface MapboxJobStatus {
@@ -56,9 +62,4 @@ export interface MapboxJobStatus {
   tileset: string;
   owner: string;
   progress: number;
-}
-
-export interface Place {
-  id: string;
-  name: string;
 }

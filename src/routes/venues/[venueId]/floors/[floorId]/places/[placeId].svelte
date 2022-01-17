@@ -3,9 +3,11 @@
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ params, fetch }) => {
-    const response = await fetch(`/api/venues/${params.venueId}`);
-    const venue: Venue = await response.json();
-    const floor = venue.floors.find(f => f.id === params.floorId);
+    const [venueResponse, floorResponse] = await Promise.all([
+      fetch(`/api/venues/${params.venueId}`),
+      fetch(`/api/venues/${params.venueId}/floors/${params.floorId}?withImage=true`),
+    ]);
+    const [venue, floor] = await Promise.all([venueResponse.json(), floorResponse.json()]);
 
     if (!venue || !floor) {
       return { status: 404 };
@@ -15,7 +17,8 @@
       return { props: { venue, floor, place: emptyPlace } };
     }
 
-    const place = floor.places.find(p => p.id === params.placeId);
+    const placeResponse = await fetch(`/api/venues/${params.venueId}/floors/${params.floorId}/places/${params.placeId}`);
+    const place: Venue = await placeResponse.json();
 
     if (!place) {
       return { status: 404 };
@@ -26,24 +29,27 @@
 </script>
 
 <script lang="ts">
-  import type { FloorLevel, Place, Venue } from '$lib/types';
+  import type { Floor, Place, Venue } from '$lib/types';
   import { goto } from '$app/navigation';
-  import { nanoid } from 'nanoid';
 
   export let venue: Venue;
-  export let floor: FloorLevel;
+  export let floor: Floor;
   export let place: Place;
 
   async function submit() {
-    place = { ...place, id: place.id === 'new' ? nanoid(8) : place.id };
-    const updatedFloor = { ...floor, places: [...floor.places.filter(p => p.id !== place.id), place] };
-    const updatedVenue: Venue = { ...venue, floors: [...venue.floors.filter(f => f.id !== floor.id), updatedFloor] };
-
-    await fetch(`/api/venues/${venue.id}`, {
-      headers: { 'Content-Type': 'application/json' },
-      method: 'PUT',
-      body: JSON.stringify(updatedVenue),
-    });
+    if (place.id === 'new') {
+      await fetch(`/api/venues/${venue.id}/floors/${floor.id}/places`, {
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        body: JSON.stringify(place),
+      });
+    } else {
+      await fetch(`/api/venues/${venue.id}/floors/${floor.id}/places/${place.id}`, {
+        headers: { 'Content-Type': 'application/json' },
+        method: 'PUT',
+        body: JSON.stringify(place),
+      });
+    }
 
     goto('/');
   }

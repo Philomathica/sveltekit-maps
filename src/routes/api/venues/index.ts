@@ -8,7 +8,7 @@ import { nanoid } from 'nanoid';
 export const get: RequestHandler<Locals, any, Typify<Venue[]>> = async () => {
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
-  const venues = await collection.find<Venue>({}, { projection: { _id: 0, 'floors.previewImage': 0 } }).toArray();
+  const venues = await collection.find<Venue>({}, { projection: { _id: 0 } }).toArray();
 
   return {
     body: venues,
