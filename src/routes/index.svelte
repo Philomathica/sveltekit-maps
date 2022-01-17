@@ -19,6 +19,7 @@
   import MapMarker from '$lib/components/maps/MapMarker.svelte';
   import FitToVenuesBtn from '$lib/components/maps/FitToVenuesBtn.svelte';
   import bbox from '@turf/bbox';
+  import { getPositionInfo } from '$lib/helpers/georeference';
 
   export let venues: Venue[];
 
@@ -47,8 +48,8 @@
     const minZoomLevel = selectedVenue.zoomLevel;
     selectedVenue.floors.map(floor => {
       // below uses only the previewImage
-      // map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
-      mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
+      mapInstance.addSource(floor.id, { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
+      // mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
       mapInstance.addLayer({
         id: floor.id,
         type: 'raster',
