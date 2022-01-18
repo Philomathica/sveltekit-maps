@@ -1,15 +1,16 @@
 <script lang="ts">
-  import type { FloorLevel, MapboxJobStatus } from '$lib/types';
+  import type { Floor, MapboxJobStatus } from '$lib/types';
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
 
-  const dispatch = createEventDispatcher<{ floorSelect: FloorLevel; delete: FloorLevel; jobResultRequested: string }>();
+  const dispatch = createEventDispatcher<{ floorSelect: Floor; delete: Floor; jobResultRequested: string }>();
 
-  export let floors: FloorLevel[] = [];
-  export let venueId: string;
-  export let selectedFloor: FloorLevel | undefined;
+  export let floors: Floor[] = [];
+  export let venueId = '';
+  export let selectedFloorId = '';
 
-  $: floors.sort((a, b) => a.number - b.number);
+  $: sortedFloors = [...floors].sort((a, b) => a.number - b.number);
+  $: selectedFloorId = sortedFloors[0]?.id;
 
   let jobResults: Record<string, string> = {};
 
@@ -20,14 +21,14 @@
     jobResults[jobId] = result.error ? `error: ${result.error}` : result.progress === 0 ? 'Job in progress' : 'Job finished';
   }
 
-  function updateSelectedFloorOnRowClick(event: MouseEvent & { currentTarget: EventTarget & HTMLTableRowElement }, floor: FloorLevel) {
+  function updateSelectedFloorOnRowClick(event: MouseEvent & { currentTarget: EventTarget & HTMLTableRowElement }, floorId: string) {
     if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
-      selectedFloor = floor;
+      selectedFloorId = floorId;
     }
   }
 </script>
 
-{#if selectedFloor}
+{#if selectedFloorId}
   <div class="overflow-x-auto">
     <table class="w-full mb-4 text-sm border border-collapse table-auto">
       <thead class="bg-gray-50">
@@ -38,11 +39,11 @@
         </tr>
       </thead>
       <tbody class="bg-white">
-        {#each floors as floor (floor.id)}
+        {#each sortedFloors as floor (floor.id)}
           <tr
             in:fade|local
-            on:click={e => updateSelectedFloorOnRowClick(e, floor)}
-            class:active={selectedFloor.id === floor.id}
+            on:click={e => updateSelectedFloorOnRowClick(e, floor.id)}
+            class:active={selectedFloorId === floor.id}
             class="hover:bg-blue-100 hover:cursor-pointer"
           >
             <td>{floor.number}</td>
@@ -64,7 +65,6 @@
     </table>
   </div>
 {/if}
-
 <a class="btn btn-primary inline-block mb-6" href="/venues/{venueId}/floors/new">add Floor</a>
 
 <style lang="postcss">

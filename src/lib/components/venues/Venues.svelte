@@ -6,9 +6,15 @@
   const dispatch = createEventDispatcher<{ venueSelect: Venue; delete: Venue }>();
 
   export let venues: Venue[] = [];
-  export let selectedVenue: Venue | undefined;
+  export let selectedVenueId: string | undefined;
 
   $: venues.sort((a, b) => a.name.localeCompare(b.name));
+
+  function updateSelectedVenueId(event: MouseEvent & { currentTarget: EventTarget & HTMLTableRowElement }, venueId: string) {
+    if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
+      selectedVenueId = venueId;
+    }
+  }
 </script>
 
 {#if venues.length}
@@ -26,12 +32,8 @@
         {#each venues as venue (venue.id)}
           <tr
             in:fade|local
-            on:click={event => {
-              if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
-                selectedVenue = venue;
-              }
-            }}
-            class:active={selectedVenue?.id === venue.id}
+            on:click={e => updateSelectedVenueId(e, venue.id)}
+            class:active={selectedVenueId === venue.id}
             class="hover:bg-blue-100 hover:cursor-pointer"
           >
             <td>{venue.name}</td>

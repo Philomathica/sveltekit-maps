@@ -1,5 +1,5 @@
 import clientPromise from '$lib/db/mongo';
-import type { Locals, Typify, Venue } from '$lib/types';
+import type { Floor, Locals, Typify, Venue } from '$lib/types';
 import { mapbox } from '$lib/variables';
 import type { RequestHandler } from '@sveltejs/kit';
 import type { Document } from 'mongodb';
@@ -9,7 +9,7 @@ export const get: RequestHandler<Locals, any, Typify<Venue>> = async ({ params, 
   const withImage = url.searchParams.get('withImage');
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
-  const projection: Document | undefined = withImage ? { _id: 0 } : { _id: 0, 'floors.previewImage': 0 };
+  const projection: Document | undefined = withImage ? { _id: 0 } : { _id: 0 };
   const venue = await collection.findOne<Venue>({ id: params.venueId }, { projection });
 
   if (!venue) {
@@ -41,13 +41,14 @@ export const del: RequestHandler<Locals> = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
   const venue = await collection.findOne<Venue>({ id: params.venueId }, { projection: { _id: 0 } });
+  const floors = await collection.find<Floor>({ id: params.floorId }, { projection: { _id: 0 } }).toArray();
 
   if (!venue) {
     return { status: 404 };
   }
 
   await Promise.all(
-    venue.floors.map(async floor => {
+    floors.map(async floor => {
       const response = await fetch(`${mapbox.baseTilesetUrl}/${floor.tileset}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
 
       if (!response.ok) {

@@ -1,4 +1,4 @@
-import type { Polygon, Position } from 'geojson';
+import type { Polygon, Point } from 'geojson';
 import type { LongLatLike } from 'mapbox-gl';
 
 /**
@@ -11,7 +11,7 @@ export type Typify<T> = { [K in keyof T]: Typify<T[K]> };
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface Locals {}
 
-export interface Point {
+export interface ReferencePoint {
   x: number;
   y: number;
   latitude: number;
@@ -19,30 +19,39 @@ export interface Point {
 }
 
 export interface Georeference {
-  points: Point[];
+  points: ReferencePoint[];
   bbox: number[];
-}
-
-export interface FloorLevel {
-  id: string;
-  number: number;
-  status: string;
-  filename: string;
-  tileset: string;
-  jobId: string;
-  jobResult: string;
-  previewImage?: string;
-  type: string;
-  georeference: Georeference;
 }
 
 export interface Venue {
   id: string;
   name: string;
   zoomLevel: number;
-  marker: Position | LongLatLike;
+  marker: LongLatLike;
   geometry: Polygon;
-  floors: FloorLevel[];
+}
+
+export interface Floor {
+  id: string;
+  venueId: string;
+  number: number;
+  georeference: Georeference;
+  universes: string[];
+  previewImage?: string;
+  tileset: string;
+  filename: string;
+  filetype: string;
+  jobId: string;
+  jobResult: string;
+}
+
+export interface Place {
+  id: string;
+  floorId: string;
+  name: string;
+  universes: string[];
+  marker: LongLatLike;
+  geometry: Polygon | Point;
 }
 
 export interface MapboxJobStatus {

@@ -2,77 +2,101 @@
   import type { Load } from '@sveltejs/kit';
 
   export const load: Load = async ({ fetch }) => {
-    const response = await fetch('/api/venues');
-    const venues: Venue[] = await response.json();
+    const responses = await Promise.all([fetch('/api/venues'), fetch('/api/floors'), fetch('/api/places')]);
 
-    return { props: { venues } };
+    responses.map(response => {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${response.url}`);
+      }
+    });
+
+    const [venues, floors, places] = await Promise.all<[Venue[], FloorLevel[], Place[]]>(responses.map(r => r.json()));
+
+    return { props: { venues, floors, places } };
   };
 </script>
 
 <script lang="ts">
+  import type { Floor as FloorLevel, Place, Venue } from '$lib/types';
   import type { LngLatBoundsLike, Map as MapboxMap } from 'mapbox-gl';
-  import type { FloorLevel, Venue } from '$lib/types';
   import Map from '$lib/components/maps/Map.svelte';
   import Floor from '$lib/components/floors/Floors.svelte';
   import FloorControl from '$lib/components/floors/FloorControl.svelte';
   import Venues from '$lib/components/venues/Venues.svelte';
   import MapMarker from '$lib/components/maps/MapMarker.svelte';
   import FitToVenuesBtn from '$lib/components/maps/FitToVenuesBtn.svelte';
+  import Places from '$lib/components/places/Places.svelte';
   import bbox from '@turf/bbox';
-  import { getPositionInfo } from '$lib/helpers/georeference';
 
   export let venues: Venue[];
+  export let floors: FloorLevel[];
+  export let places: Place[];
 
-  let selectedVenue: Venue | undefined;
-  let previousSelectedVenue: Venue | undefined;
-  let selectedFloor: FloorLevel | undefined;
+  $: selectedVenue = venues.find(v => v.id === selectedVenueId);
+  $: selectedFloor = floors.find(v => v.id === selectedFloorId);
+  $: selectedPlace = places.find(v => v.id === selectedPlaceId);
+  $: floorsBySelectedVenue = floors.filter(f => f.venueId === selectedVenueId);
+  $: placesBySelectedFloor = places.filter(f => f.floorId === selectedFloorId);
+  $: mapInstance && selectedVenueId && configureVenue();
+  $: mapInstance && selectedFloorId && configureFloor();
+  $: mapInstance && selectedPlaceId && configurePlace();
+
+  let selectedVenueId = '';
+  let selectedFloorId = '';
+  let selectedPlaceId = '';
+  let previousSelectedVenueId = '';
   let mapInstance: MapboxMap;
   let map: Map;
   let loadingJobs: Promise<any>;
-
-  $: mapInstance && selectedVenue && configureVenue();
-  $: mapInstance && selectedFloor && configureFloor();
 
   function configureVenue() {
     if (!selectedVenue) {
       return;
     }
 
-    if (previousSelectedVenue) {
-      previousSelectedVenue.floors.forEach(floor => {
-        map.removeLayer(floor.id);
-        map.removeSource(floor.id);
-      });
+    if (previousSelectedVenueId) {
+      floors
+        .filter(f => f.venueId === previousSelectedVenueId)
+        .forEach(floor => {
+          map.removeLayer(floor.id);
+          map.removeSource(floor.id);
+        });
     }
 
     const minZoomLevel = selectedVenue.zoomLevel;
-    selectedVenue.floors.map(floor => {
-      // below uses only the previewImage
-      // mapInstance.addSource(floor.id, { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
-      mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
-      mapInstance.addLayer({
-        id: floor.id,
-        type: 'raster',
-        source: floor.id,
-        paint: { 'raster-fade-duration': 0 },
-        minzoom: minZoomLevel,
+    floors
+      .filter(f => f.venueId === selectedVenueId)
+      .map(floor => {
+        // below uses only the previewImage
+        // mapInstance.addSource(floor.id, { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
+        mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
+        mapInstance.addLayer({
+          id: floor.id,
+          type: 'raster',
+          source: floor.id,
+          paint: { 'raster-fade-duration': 0 },
+          minzoom: minZoomLevel,
+        });
       });
-      mapInstance.setLayoutProperty(floor.id, 'visibility', 'none');
-    });
 
-    selectedFloor = selectedVenue.floors[0];
-    previousSelectedVenue = selectedVenue;
+    previousSelectedVenueId = selectedVenueId;
     const boundingBox = bbox(selectedVenue.geometry) as LngLatBoundsLike;
     mapInstance.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 }, animate: true, screenSpeed: 2 });
   }
 
   function configureFloor() {
-    if (!selectedVenue || !selectedFloor) {
+    if (!selectedFloor) {
       return;
     }
 
-    selectedVenue.floors.map(f => mapInstance.setLayoutProperty(f.id, 'visibility', 'none'));
+    floors.filter(f => f.venueId === selectedVenueId).map(f => mapInstance.setLayoutProperty(f.id, 'visibility', 'none'));
     mapInstance.setLayoutProperty(selectedFloor.id, 'visibility', 'visible');
+  }
+
+  async function configurePlace() {
+    if (!selectedPlace) {
+      return;
+    }
   }
 
   async function deleteVenue(venue: Venue) {
@@ -87,12 +111,12 @@
     }
 
     venues = venues.filter(v => v.id !== venue.id);
-    selectedVenue = venues.length > 0 ? venues[0] : undefined;
-
-    venue.floors.forEach(floor => {
-      map.removeLayer(floor.id);
-      map.removeSource(floor.id);
-    });
+    floors
+      .filter(f => f.venueId === venue.id)
+      .forEach(floor => {
+        map.removeLayer(floor.id);
+        map.removeSource(floor.id);
+      });
   }
 
   async function deleteFloor(floor: FloorLevel) {
@@ -101,24 +125,29 @@
       return;
     }
 
-    const updatedVenue = { ...selectedVenue, floors: selectedVenue.floors.filter(f => f.id !== floor.id) };
-
-    const response = await fetch(`/api/venues/${selectedVenue.id}`, {
-      headers: { 'Content-Type': 'application/json' },
-      method: 'PUT',
-      body: JSON.stringify(updatedVenue),
-    });
-
+    const response = await fetch(`/api/venues/${selectedVenueId}/floors/${floor.id}`, { method: 'DELETE' });
     if (!response.ok) {
       return window.alert(`Error deleting floor: ${await response.text()}`);
     }
 
-    venues = [...venues.filter(v => v.id !== updatedVenue.id), updatedVenue];
-    selectedVenue = updatedVenue;
-    selectedFloor = selectedVenue.floors.length ? selectedVenue.floors[0] : undefined;
+    floors = floors.filter(f => f.id !== floor.id);
 
     map.removeLayer(floor.id);
     map.removeSource(floor.id);
+  }
+
+  async function deletePlace(place: Place) {
+    const confirm = window.confirm(`Are you sure you want to delete place ${place.name}?`);
+    if (!confirm || !selectedVenue || !selectedFloor) {
+      return;
+    }
+
+    const response = await fetch(`/api/venues/${selectedVenueId}/floors/${selectedFloor.id}/places/${place.id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      return window.alert(`Error deleting place: ${await response.text()}`);
+    }
+
+    places = places.filter(p => p.id !== place.id);
   }
 </script>
 
@@ -132,7 +161,7 @@
       <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-2">location_on</span>
       Venues
     </h2>
-    <Venues {venues} bind:selectedVenue on:delete={e => deleteVenue(e.detail)} />
+    <Venues {venues} bind:selectedVenueId on:delete={e => deleteVenue(e.detail)} />
 
     {#if selectedVenue}
       <h2 class="my-4">
@@ -141,18 +170,42 @@
       </h2>
       <div class="flex justify-between">
         <h3 class="mb-3">
-          {#if selectedVenue.floors.length}
+          {#if floorsBySelectedVenue.length}
             Select
           {:else}
             Add
           {/if}
-          a floor for venue <strong>{selectedVenue?.name}</strong>
+          a floor for venue <strong>{selectedVenue.name}</strong>
         </h3>
         {#await loadingJobs}
           Loading job result...
         {/await}
       </div>
-      <Floor bind:selectedFloor floors={selectedVenue.floors} venueId={selectedVenue.id} on:delete={e => deleteFloor(e.detail)} />
+      <Floor bind:selectedFloorId floors={floorsBySelectedVenue} venueId={selectedVenueId} on:delete={e => deleteFloor(e.detail)} />
+    {/if}
+
+    {#if selectedVenue && selectedFloor}
+      <h2 class="my-4">
+        <span class="material-icons text-[28px] relative top-[5px] mr-2 text-[#4264fb]">layers</span>
+        Places
+      </h2>
+      <div class="flex justify-between">
+        <h3 class="mb-3">
+          {#if placesBySelectedFloor.length}
+            Select
+          {:else}
+            Add
+          {/if}
+          a place for floor number <strong>{selectedFloor.number}</strong>
+        </h3>
+      </div>
+      <Places
+        bind:selectedPlaceId
+        places={placesBySelectedFloor}
+        floorId={selectedFloorId}
+        venueId={selectedVenueId}
+        on:delete={e => deletePlace(e.detail)}
+      />
     {/if}
   </div>
 
@@ -168,7 +221,7 @@
     </Map>
 
     {#if mapInstance && selectedVenue}
-      <FloorControl bind:selectedFloor floors={selectedVenue.floors} />
+      <FloorControl bind:selectedFloorId floors={floorsBySelectedVenue} />
     {/if}
   </div>
 </div>
