@@ -17,8 +17,8 @@
 </script>
 
 <script lang="ts">
-  import type { Map as MapboxMap } from 'mapbox-gl';
   import type { Floor as FloorLevel, Place, Venue } from '$lib/types';
+  import type { LngLatBoundsLike, Map as MapboxMap } from 'mapbox-gl';
   import Map from '$lib/components/maps/Map.svelte';
   import Floor from '$lib/components/floors/Floors.svelte';
   import FloorControl from '$lib/components/floors/FloorControl.svelte';
@@ -26,6 +26,7 @@
   import MapMarker from '$lib/components/maps/MapMarker.svelte';
   import FitToVenuesBtn from '$lib/components/maps/FitToVenuesBtn.svelte';
   import Places from '$lib/components/places/Places.svelte';
+  import bbox from '@turf/bbox';
 
   export let venues: Venue[];
   export let floors: FloorLevel[];
@@ -36,6 +37,9 @@
   $: selectedPlace = places.find(v => v.id === selectedPlaceId);
   $: floorsBySelectedVenue = floors.filter(f => f.venueId === selectedVenueId);
   $: placesBySelectedFloor = places.filter(f => f.floorId === selectedFloorId);
+  $: mapInstance && selectedVenueId && configureVenue();
+  $: mapInstance && selectedFloorId && configureFloor();
+  $: mapInstance && selectedPlaceId && configurePlace();
 
   let selectedVenueId = '';
   let selectedFloorId = '';
@@ -44,10 +48,6 @@
   let mapInstance: MapboxMap;
   let map: Map;
   let loadingJobs: Promise<any>;
-
-  $: mapInstance && selectedVenueId && configureVenue();
-  $: mapInstance && selectedFloorId && configureFloor();
-  $: mapInstance && selectedPlaceId && configurePlace();
 
   function configureVenue() {
     if (!selectedVenue) {
@@ -68,7 +68,7 @@
       .filter(f => f.venueId === selectedVenueId)
       .map(floor => {
         // below uses only the previewImage
-        // map.addSource(f.id, { type: 'image', url: f.previewImage, coordinates: getPositionInfo(f.georeference) });
+        // mapInstance.addSource(floor.id, { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
         mapInstance.addSource(floor.id, { type: 'raster', url: `mapbox://${floor.tileset}` });
         mapInstance.addLayer({
           id: floor.id,
@@ -77,11 +77,11 @@
           paint: { 'raster-fade-duration': 0 },
           minzoom: minZoomLevel,
         });
-        mapInstance.setLayoutProperty(floor.id, 'visibility', 'none');
       });
 
     previousSelectedVenueId = selectedVenueId;
-    mapInstance.flyTo({ center: selectedVenue.marker, zoom: minZoomLevel });
+    const boundingBox = bbox(selectedVenue.geometry) as LngLatBoundsLike;
+    mapInstance.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 }, animate: true, screenSpeed: 2 });
   }
 
   function configureFloor() {
