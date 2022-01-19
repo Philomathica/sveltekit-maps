@@ -130,7 +130,7 @@
 
 <div class="flex flex-row flex-1">
   <div class="basis-1/3 flex flex-col min-w-0 px-8 py-6">
-    <div class="">
+    <div>
       <h2 class="mb-4">
         <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-1">location_on</span>
         Venue
