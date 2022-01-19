@@ -1,5 +1,4 @@
 import type { Polygon, Point } from 'geojson';
-import type { LongLatLike } from 'mapbox-gl';
 
 /**
  * Can be made globally available by placing this
@@ -27,7 +26,7 @@ export interface Venue {
   id: string;
   name: string;
   zoomLevel: number;
-  marker: LongLatLike;
+  marker: number[];
   geometry: Polygon;
 }
 
@@ -50,7 +49,7 @@ export interface Place {
   floorId: string;
   name: string;
   universes: string[];
-  marker: LongLatLike;
+  marker: [number, number];
   geometry: Polygon | Point;
 }
 

@@ -19,7 +19,7 @@
   });
 
   function fitToBounds(animate = true) {
-    venues.map(v => bounds.extend(v.marker));
+    venues.map(v => bounds.extend([v.marker[0], v.marker[1]]));
     map.fitBounds(bounds, { padding: { top: 150, bottom: 150, left: 150, right: 150 }, animate });
   }
 </script>

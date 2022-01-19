@@ -66,8 +66,8 @@
 
     // Marker
     markerEl = new mapbox.Marker({ draggable: true });
-    markerEl.setLngLat(venue.marker).addTo(map);
-    map.jumpTo({ center: venue.marker });
+    markerEl.setLngLat([venue.marker[0], venue.marker[1]]).addTo(map);
+    map.jumpTo({ center: [venue.marker[0], venue.marker[1]] });
     markerEl.on('dragend', () => {
       const { lng, lat } = markerEl.getLngLat();
       venue.marker = [lng, lat];
@@ -92,7 +92,7 @@
     map.on('draw.delete', updateArea);
     map.on('draw.update', updateArea);
 
-    function updateArea(e: any) {
+    function updateArea(e: MapboxDraw.DrawEvent) {
       const data = draw.getAll();
 
       if (!data.features.length) {
@@ -107,7 +107,7 @@
       boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
 
       venue.marker = center(data as AllGeoJSON).geometry.coordinates;
-      markerEl.setLngLat(venue.marker);
+      markerEl.setLngLat([venue.marker[0], venue.marker[1]]);
       venue = venue;
 
       if (draw.getMode() === 'draw_polygon') {
@@ -159,8 +159,8 @@
             placeholder="lng"
             bind:value={venue.marker[0]}
             on:change={() => {
-              map.jumpTo({ center: venue.marker });
-              markerEl.setLngLat(venue.marker);
+              map.jumpTo({ center: [venue.marker[0], venue.marker[1]] });
+              markerEl.setLngLat([venue.marker[0], venue.marker[1]]);
             }}
           />
         </label>
@@ -175,8 +175,8 @@
             placeholder="lat"
             bind:value={venue.marker[1]}
             on:change={() => {
-              map.jumpTo({ center: venue.marker });
-              markerEl.setLngLat(venue.marker);
+              map.jumpTo({ center: [venue.marker[0], venue.marker[1]] });
+              markerEl.setLngLat([venue.marker[0], venue.marker[1]]);
             }}
           />
         </label>
