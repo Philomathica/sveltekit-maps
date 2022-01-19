@@ -143,7 +143,7 @@
     await fetch(signedUrl, { body: geotiffFile, method: 'PUT' });
 
     loadingMessage = 'converting geotiff to tileset...';
-    const convertResponse = await fetch(`/api/tilesets/${floor.tileset}`, {
+    const convertResponse = await fetch(`/api/tilesets/${floor.tilesetId}`, {
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
       body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
@@ -163,10 +163,10 @@
     goto('/');
   }
 
-  async function storeTileset(jobId: string, tileset: string) {
+  async function storeTileset(jobId: string, tilesetId: string) {
     floor = {
       ...floor,
-      tileset,
+      tilesetId,
       jobId,
       georeference: setGeoRefDimensionData(
         floor.georeference.bbox[2],
@@ -224,7 +224,7 @@
 
     <div class="p-4 text-xs font-light text-gray-500 bg-gray-200 border">
       {#if floor.filename} <div class="block mb-1"><span class="mb-4 font-bold">Filename: </span>{floor.filename}</div>{/if}
-      {#if floor.tileset} <span class="font-bold">TilesetId: </span>{floor.tileset}{/if}
+      {#if floor.tilesetId} <span class="font-bold">TilesetId: </span>{floor.tilesetId}{/if}
     </div>
 
     {#if loadingMessage}

@@ -15,7 +15,7 @@ export const emptyFloor: Floor = {
     ],
     bbox: [0, 0, 600, 400],
   },
-  tileset: 'new',
+  tilesetId: 'new',
   jobId: '',
   jobResult: '',
   filetype: '',

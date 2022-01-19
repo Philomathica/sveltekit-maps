@@ -37,7 +37,7 @@ export interface Floor {
   georeference: Georeference;
   universes: string[];
   previewImage?: string;
-  tileset: string;
+  tilesetId: string;
   filename: string;
   filetype: string;
   jobId: string;

@@ -43,7 +43,7 @@ export const del: RequestHandler<Locals> = async ({ params }) => {
     return { status: 404 };
   }
 
-  const response = await fetch(`${mapbox.baseTilesetUrl}/${floor.tileset}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
+  const response = await fetch(`${mapbox.baseTilesetUrl}/${floor.tilesetId}?access_token=${mapbox.uploadToken}`, { method: 'DELETE' });
   if (!response.ok) {
     console.error('error deleting tileset:', response);
   }
