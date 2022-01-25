@@ -85,8 +85,6 @@
       console.log('e.type', e.type);
       const data = draw.getAll();
 
-      place.geometry = data.features[0].geometry as Polygon | Point;
-
       if (draw.getMode() === 'draw_polygon' || draw.getMode() === 'draw_point') {
         const pids: any = [];
         const lid = data.features[data.features.length - 1].id;
@@ -100,6 +98,8 @@
         });
         draw.delete(pids);
       }
+
+      place = { ...place, geometry: data.features[data.features.length - 1].geometry as Polygon | Point };
     }
   }
 
