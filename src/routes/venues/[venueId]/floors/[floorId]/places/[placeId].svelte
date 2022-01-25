@@ -68,6 +68,19 @@
     map.on('draw.delete', updateArea);
     map.on('draw.update', updateArea);
 
+    if (place.geometry.coordinates.length) {
+      draw.set({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: place.geometry as Polygon | Point,
+          },
+        ],
+      });
+    }
+
     function updateArea(e: MapboxDraw.DrawEvent) {
       console.log('e.type', e.type);
       const data = draw.getAll();
