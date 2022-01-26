@@ -6,9 +6,9 @@ import type { RequestHandler } from '@sveltejs/kit';
 export const get: RequestHandler<Locals, any, Typify<Floor[]>> = async () => {
   const client = await clientPromise;
   const collection = client.db().collection<Floor>('floors');
-  const venues = await collection.find<Floor>({}, { projection: { _id: 0, 'floors.previewImage': 0 } }).toArray();
+  const floors = await collection.find<Floor>({}, { projection: { _id: 0, previewImage: 0 } }).toArray();
 
   return {
-    body: venues,
+    body: floors,
   };
 };
