@@ -2,6 +2,7 @@
 /// <reference types="@sveltejs/kit" />
 
 declare module 'loam';
+declare module 'geojson-validation';
 
 interface ImportMetaEnv {
   VITE_MAPBOX_ACCESS_TOKEN: string;

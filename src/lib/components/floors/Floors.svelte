@@ -1,16 +1,15 @@
 <script lang="ts">
+  import { routes } from '$lib/enum-types';
   import type { Floor, MapboxJobStatus } from '$lib/types';
-  import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
-
-  const dispatch = createEventDispatcher<{ floorSelect: Floor; delete: Floor; jobResultRequested: string }>();
+  import { createEventDispatcher } from 'svelte';
 
   export let floors: Floor[] = [];
-  export let venueId = '';
   export let selectedFloorId = '';
 
-  $: sortedFloors = [...floors].sort((a, b) => a.number - b.number);
-  $: selectedFloorId = sortedFloors[0]?.id;
+  const dispatch = createEventDispatcher<{ floorChange: string }>();
+
+  $: dispatch('floorChange', selectedFloorId);
 
   let jobResults: Record<string, string> = {};
 
@@ -39,7 +38,7 @@
         </tr>
       </thead>
       <tbody class="bg-white">
-        {#each sortedFloors as floor (floor.id)}
+        {#each floors as floor (floor.id)}
           <tr
             in:fade|local
             on:click={e => updateSelectedFloorOnRowClick(e, floor.id)}
@@ -56,8 +55,9 @@
             </td>
             <td class="text-right">
               <button type="button" class="btn btn-secondary" on:click={() => getJobStatus(floor.jobId)}>&#8635;</button>
-              <a class="btn btn-secondary ml-2 text-blue-600" href="/venues/{venueId}/floors/{floor.id}" sveltekit:prefetch>Edit</a>
-              <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', floor)}>Delete</button>
+              <a class="btn btn-secondary ml-2 text-blue-600" href="/{routes.VENUES}/{floor.venueId}/{routes.FLOORS}/{floor.id}" sveltekit:prefetch
+                >Edit</a
+              >
             </td>
           </tr>
         {/each}
@@ -65,7 +65,6 @@
     </table>
   </div>
 {/if}
-<a class="btn btn-primary inline-block mb-6" href="/venues/{venueId}/floors/new">add Floor</a>
 
 <style lang="postcss">
   .active {

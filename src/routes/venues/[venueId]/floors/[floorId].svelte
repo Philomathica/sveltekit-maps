@@ -47,22 +47,22 @@
   export let floor: Floor;
 
   let mapComponent: Map;
-  let map: MapboxMap;
+  let mapInstance: MapboxMap;
   let sourceCoordinates: number[][];
   let imageInput: HTMLInputElement;
   let uploadedImage: File;
   let loadingMessage = '';
   let error: string;
 
-  async function initMap(mapInstance: MapboxMap) {
-    map = mapInstance;
+  async function initMap(mapInst: MapboxMap) {
+    mapInstance = mapInst;
     fitToBounds(venue);
 
     if (floor.id !== 'new') {
       clearMap();
       // add existing
-      map.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
-      map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
+      mapInstance.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
+      mapInstance.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
       mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
 
       // dataURLtoFile
@@ -107,8 +107,8 @@
       floor = { ...floor, georeference: geoRefWithUpdatedBounds };
     }
 
-    map.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
-    map.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
+    mapInstance.addSource('sourceId', { type: 'image', url: floor.previewImage, coordinates: getPositionInfo(floor.georeference) });
+    mapInstance.addLayer({ id: 'layerId', type: 'raster', source: 'sourceId', paint: { 'raster-fade-duration': 0 } });
 
     mapComponent.setMarkerAndListeners('sourceId', floor.georeference);
   }
@@ -160,7 +160,7 @@
 
     await storeTileset(jobId, tileset);
 
-    goto('/');
+    goto(`/venues/${venue.id}/floors`);
   }
 
   async function storeTileset(jobId: string, tilesetId: string) {
@@ -193,7 +193,7 @@
   /** Map Helpers*/
   function fitToBounds(venue: Venue) {
     const boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
-    map.fitBounds(boundingBox, { animate: false, padding: { top: 150, bottom: 150, left: 150, right: 150 } });
+    mapInstance.fitBounds(boundingBox, { animate: false, padding: { top: 150, bottom: 150, left: 150, right: 150 } });
   }
 
   function clearMap() {
@@ -201,16 +201,31 @@
     mapComponent.removeSource('sourceId');
     mapComponent.removeMarkers();
   }
+
+  async function deleteFloor(floor: Floor) {
+    const confirm = window.confirm(`Are you sure you want to delete floor number ${floor.number}?`);
+    if (!confirm) {
+      return;
+    }
+
+    const response = await fetch(`/api/venues/${floor.venueId}/floors/${floor.id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      return window.alert(`Error deleting floor: ${await response.text()}`);
+    }
+
+    mapInstance.removeLayer(floor.id);
+    mapInstance.removeSource(floor.id);
+
+    goto('/floors');
+  }
 </script>
 
 <div class="flex flex-row flex-1">
-  <div class="basis-1/3 min-w-0 px-8 py-6">
-    <div>
-      <h2 class="mb-4">
-        <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-1">layers</span>Floor
-        <span class="mb-4 font-light text-gray-400">- #{floor.id}</span>
-      </h2>
-    </div>
+  <div class="flex flex-col w-96 px-8 py-6">
+    <h2 class="flex items-center my-4">
+      <span class="material-icons text-[32px] top-[2px] relative text-[#4264fb] mr-2">layers</span>Floor: #{floor.id}
+      <span class="material-icons text-[16px] relative top-[5px] text-gray-300 ml-auto" on:click={() => deleteFloor(floor)}>delete</span>
+    </h2>
 
     <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
       FloorNumber
@@ -239,7 +254,7 @@
     </button>
   </div>
 
-  <div class="basis-2/3">
+  <div class="flex-1">
     <Map bind:this={mapComponent} bind:sourceCoordinates on:mapReady={e => initMap(e.detail)} />
     <div class="absolute bottom-0 flex justify-between p-4 py-2 m-4">
       <small>{floor.georeference.bbox}</small>

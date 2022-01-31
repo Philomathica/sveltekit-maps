@@ -1,18 +1,21 @@
 <script lang="ts">
+  import { routes } from '$lib/enum-types';
+
   import type { Place } from '$lib/types';
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
 
-  const dispatch = createEventDispatcher<{ placeSelect: Place; delete: Place }>();
+  const dispatch = createEventDispatcher<{ placeSelect: string }>();
 
-  export let places: Place[] = [];
   export let venueId: string;
-  export let floorId: string;
+  export let places: Place[] = [];
   export let selectedPlaceId = '';
 
   $: sortedPlaces = [...places].sort((a, b) => a.name.localeCompare(b.name));
-  $: selectedPlaceId = sortedPlaces[0]?.id;
-
+  $: {
+    selectedPlaceId = sortedPlaces[0]?.id;
+    dispatch('placeSelect', selectedPlaceId);
+  }
   $: places.sort((a, b) => a.name.localeCompare(b.name));
 
   function updateSelectedPlaceOnRowClick(event: MouseEvent & { currentTarget: EventTarget & HTMLTableRowElement }, placeId: string) {
@@ -41,8 +44,11 @@
           >
             <td>{place.name}</td>
             <td class="text-right">
-              <a class="btn btn-secondary ml-2 text-blue-600" href="/venues/{venueId}/floors/{floorId}/places/{place.id}" sveltekit:prefetch>Edit</a>
-              <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', place)}>Delete</button>
+              <a
+                class="btn btn-secondary inline-block ml-2 text-blue-600"
+                href="/{routes.VENUES}/{venueId}/{routes.PLACES}/{place.id}"
+                sveltekit:prefetch>Edit</a
+              >
             </td>
           </tr>
         {/each}
@@ -50,8 +56,6 @@
     </table>
   </div>
 {/if}
-
-<a class="btn btn-primary inline-block mb-6" href="/venues/{venueId}/floors/{floorId}/places/new">add Place</a>
 
 <style lang="postcss">
   .active {

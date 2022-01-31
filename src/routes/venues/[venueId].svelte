@@ -2,7 +2,6 @@
   import type { Venue } from '$lib/types';
   import type { Load } from '@sveltejs/kit';
   import type { Polygon } from 'geojson';
-  import { goto } from '$app/navigation';
   import { emptyVenue } from './_empty-venue';
 
   export const load: Load = async ({ params, fetch }) => {
@@ -34,6 +33,9 @@
 
   import type { AllGeoJSON } from '@turf/helpers';
   import { getMapbox } from '$lib/components/maps/mapbox';
+  import { goto } from '$app/navigation';
+  import { isPolygon } from 'geojson-validation';
+  import { routes } from '$lib/enum-types';
 
   export let venue: Venue;
 
@@ -53,10 +55,11 @@
 
     if (!response.ok) {
       console.error(response);
-      isSubmitting = false;
     }
+    const respVenue = await response.json();
 
-    goto('/');
+    isSubmitting = false;
+    goto(`/${routes.VENUES}/${respVenue.id}`);
   }
 
   async function initMap(mapInstance: MapboxMap) {
@@ -80,9 +83,10 @@
         trash: true,
       },
     });
+
     map.addControl(draw, 'top-left');
 
-    if (venue.id !== 'new') {
+    if (venue.id !== 'new' && isPolygon(venue.geometry)) {
       draw.add(venue.geometry);
       boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
       map.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 }, animate: false });
@@ -93,6 +97,7 @@
     map.on('draw.update', updateArea);
 
     function updateArea(e: MapboxDraw.DrawEvent) {
+      console.log(e.type);
       const data = draw.getAll();
 
       if (!data.features.length) {
@@ -129,78 +134,75 @@
 </svelte:head>
 
 <div class="flex flex-row flex-1">
-  <div class="basis-1/3 flex flex-col min-w-0 px-8 py-6">
-    <div>
-      <h2 class="mb-4">
-        <span class="material-icons text-[32px] relative top-[5px] text-[#4264fb] mr-1">location_on</span>
-        Venue
-        <span class="mb-4 font-light text-gray-400">- #{venue.id}</span>
-      </h2>
+  <div class="flex flex-col w-96 px-8 py-6">
+    <h2 class="flex items-center my-4">
+      <span class="material-icons text-[32px] relative top-[0px] text-[#4264fb] mr-2">business</span>
+      Venue
+    </h2>
 
-      <form on:submit|preventDefault={createVenue} class="flex flex-col" autocomplete="off">
-        <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
-          Venue Name
-          <input class="w-full" required type="text" name="name" bind:value={venue.name} placeholder="name" />
-        </label>
-        <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
-          Zoom level
-          <input class="w-full" required type="number" name="zoom-level" bind:value={venue.zoomLevel} placeholder="zoom-level" />
-        </label>
-        <p class="mt-4 mb-2 font-bold">Marker Position</p>
+    <form on:submit|preventDefault={createVenue} class="flex flex-col" autocomplete="off">
+      <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
+        Venue Name
+        <input class="w-full" required type="text" name="name" bind:value={venue.name} placeholder="name" />
+      </label>
+      <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
+        Zoom level
+        <input class="w-full" required type="number" name="zoom-level" bind:value={venue.zoomLevel} placeholder="zoom-level" />
+      </label>
+      <p class="mt-4 mb-2 font-bold">Marker Position</p>
 
-        <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
-          Longitude
-          <input
-            class="w-full"
-            required
-            type="number"
-            name="lng"
-            step="0.000000000000000001"
-            placeholder="lng"
-            bind:value={venue.marker[0]}
-            on:change={() => {
-              map.jumpTo({ center: [venue.marker[0], venue.marker[1]] });
-              markerEl.setLngLat([venue.marker[0], venue.marker[1]]);
-            }}
-          />
-        </label>
-        <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
-          Latitude
-          <input
-            class="w-full"
-            required
-            type="number"
-            name="lat"
-            step="0.000000000000000001"
-            placeholder="lat"
-            bind:value={venue.marker[1]}
-            on:change={() => {
-              map.jumpTo({ center: [venue.marker[0], venue.marker[1]] });
-              markerEl.setLngLat([venue.marker[0], venue.marker[1]]);
-            }}
-          />
-        </label>
-        <p class="mb-4 font-bold">Click the map to draw a polygon.</p>
-        <label for="" class="block mb-4 text-xs font-light text-gray-400 uppercase">Polygon</label>
-        <div class="p-4 mb-4 text-xs font-light text-gray-500 bg-gray-200 border">
-          <pre>
+      <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
+        Longitude
+        <input
+          class="w-full"
+          required
+          type="number"
+          name="lng"
+          step="0.000000000000000001"
+          placeholder="lng"
+          bind:value={venue.marker[0]}
+          on:change={() => {
+            map.jumpTo({ center: [venue.marker[0], venue.marker[1]] });
+            markerEl.setLngLat([venue.marker[0], venue.marker[1]]);
+          }}
+        />
+      </label>
+      <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
+        Latitude
+        <input
+          class="w-full"
+          required
+          type="number"
+          name="lat"
+          step="0.000000000000000001"
+          placeholder="lat"
+          bind:value={venue.marker[1]}
+          on:change={() => {
+            map.jumpTo({ center: [venue.marker[0], venue.marker[1]] });
+            markerEl.setLngLat([venue.marker[0], venue.marker[1]]);
+          }}
+        />
+      </label>
+      <p class="mb-4 font-bold">Click the map to draw a polygon.</p>
+      <label for="" class="block mb-4 text-xs font-light text-gray-400 uppercase">Polygon</label>
+      <div class="p-4 mb-4 text-xs font-light text-gray-500 bg-gray-200 border">
+        <pre>
             {JSON.stringify(
-              venue.geometry.coordinates[0].map(c => c[0]),
-              null,
-              2,
-            )}
+            venue.geometry.coordinates[0].map(c => c[0]),
+            null,
+            2,
+          )}
           </pre>
+      </div>
+      {#if devMode}
+        <label for="" class="block mb-4 text-xs font-light text-gray-400 uppercase">Boundingbox</label>
+        <div class="p-4 mb-4 text-xs font-light text-gray-500 bg-gray-200 border">
+          <pre>{JSON.stringify(boundingBox, undefined, 2)}</pre>
         </div>
-        {#if devMode}
-          <label for="" class="block mb-4 text-xs font-light text-gray-400 uppercase">Boundingbox</label>
-          <div class="p-4 mb-4 text-xs font-light text-gray-500 bg-gray-200 border">
-            <pre>{JSON.stringify(boundingBox, undefined, 2)}</pre>
-          </div>
-        {/if}
+      {/if}
 
-        <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Save</button>
-      </form>
-    </div>
+      <button type="submit" class="btn btn-primary" disabled={isSubmitting}>Save</button>
+    </form>
   </div>
 
   <div class="flex-1">

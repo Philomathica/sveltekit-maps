@@ -23,7 +23,7 @@ export const put: RequestHandler<Locals, Place, Typify<Place>> = async ({ params
   const client = await clientPromise;
   const collection = client.db().collection<Place>('places');
 
-  const updatedPlace: Place = { ...place, id: params.placeId, floorId: params.floorId };
+  const updatedPlace: Place = { ...place, id: params.placeId };
 
   await collection.replaceOne({ id: place.id }, updatedPlace);
 

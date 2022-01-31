@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Venue } from '$lib/types';
-  import { createEventDispatcher } from 'svelte';
+  // import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
 
-  const dispatch = createEventDispatcher<{ venueSelect: Venue; delete: Venue }>();
+  // const dispatch = createEventDispatcher<{ venueSelect: Venue; delete: Venue }>();
 
   export let venues: Venue[] = [];
   export let selectedVenueId: string | undefined;
@@ -38,8 +38,8 @@
           >
             <td>{venue.name}</td>
             <td class="text-right">
-              <a class="btn btn-secondary text-blue-600" href="/venues/{venue.id}" sveltekit:prefetch>Edit</a>
-              <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', venue)}> Delete </button>
+              <a class="btn btn-secondary inline-block my-1 text-blue-600" href="/venues/{venue.id}" sveltekit:prefetch>Edit</a>
+              <!-- <button type="button" class="btn btn-secondary ml-2 text-red-600" on:click={() => dispatch('delete', venue)}> Delete </button> -->
             </td>
           </tr>
         {/each}
