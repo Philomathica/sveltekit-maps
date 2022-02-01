@@ -8,7 +8,7 @@
       fetch(`/api/venues/${params.venueId}/places`),
     ]);
 
-    responses.map(response => {
+    responses.forEach(response => {
       if (!response.ok) {
         throw new Error(`Failed to fetch ${response.url}`);
       }

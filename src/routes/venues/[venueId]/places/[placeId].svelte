@@ -133,7 +133,7 @@
 
   async function submit() {
     // update corresponding floor on place
-    place = { ...place, floorId: selectedFloorId };
+    place = { ...place, floorId: selectedFloorId, venueId: venue.id };
 
     if (place.id === 'new') {
       await fetch(`/api/${routes.VENUES}/${venue.id}/${routes.PLACES}`, {

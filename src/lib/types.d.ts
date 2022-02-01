@@ -46,6 +46,7 @@ export interface Floor {
 export interface Place {
   id: string;
   floorId: string;
+  venueId?: string;
   name: string;
   universes: string[];
   marker: [number, number];

@@ -9,10 +9,6 @@ export const get: RequestHandler<Locals, any, Typify<Floor[]>> = async ({ params
   const collection = client.db().collection<Floor>('floors');
   const floors = await collection.find<Floor>({ venueId: params.venueId }, { projection: { _id: 0 } }).toArray();
 
-  if (!floors) {
-    return { status: 404 };
-  }
-
   return {
     body: floors,
   };
