@@ -54,7 +54,10 @@
       });
     });
 
-    selectedFloorId = floors[0].id;
+    // TODO define default floor-logic
+    if (floors.length) {
+      selectedFloorId = floors[0].id;
+    }
 
     return;
   }

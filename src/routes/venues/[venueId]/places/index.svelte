@@ -39,8 +39,10 @@
   let selectedFloorId = '';
   let selectedPlaceId = '';
 
-  $: switchFloor(selectedFloorId);
-  $: focusOnPlace(selectedPlaceId);
+  $: {
+    switchFloor(selectedFloorId);
+    focusOnPlace(selectedPlaceId);
+  }
 
   async function initMap(mapInst: MapboxMap) {
     mapInstance = mapInst;
@@ -94,7 +96,7 @@
 
     selectedFloorId = place?.floorId;
 
-    mapInstance.flyTo({ center: place?.marker });
+    mapInstance.flyTo({ center: [place?.marker[0], place?.marker[1]] });
   }
 </script>
 

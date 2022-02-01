@@ -49,7 +49,7 @@ export interface Place {
   venueId?: string;
   name: string;
   universes: string[];
-  marker: [number, number];
+  marker: number[];
   geometry: Polygon | Point;
 }
 

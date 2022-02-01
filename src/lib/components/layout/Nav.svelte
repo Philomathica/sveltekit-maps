@@ -19,6 +19,7 @@
   <li>
     <a
       class="block py-4 text-center"
+      class:pointer-events-none={venueId === 'new'}
       class:active={activeMenu === routes.FLOORS}
       href="/{routes.VENUES}/{venueId}/{routes.FLOORS}"
       sveltekit:prefetch
@@ -34,6 +35,7 @@
   <li>
     <a
       class="block py-4 text-center"
+      class:pointer-events-none={venueId === 'new'}
       class:active={activeMenu === routes.PLACES}
       href="/{routes.VENUES}/{venueId}/{routes.PLACES}"
       sveltekit:prefetch

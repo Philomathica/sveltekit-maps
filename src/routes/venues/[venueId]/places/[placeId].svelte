@@ -200,7 +200,14 @@
         </pre>
       </div>
 
-      <button type="submit" class="btn btn-primary w-full mt-8">save</button>
+      <div class="flex">
+        <button
+          type="button"
+          class="basis-1/3 btn btn-primary-outline w-full mt-8 text-gray-400 mr-4"
+          on:click={() => goto(`/${routes.VENUES}/${venue.id}/${routes.PLACES}`)}>Cancel</button
+        >
+        <button type="submit" class="btn btn-primary w-full mt-8">save</button>
+      </div>
     </form>
   </div>
 

@@ -89,7 +89,7 @@
     if (venue.id !== 'new' && isPolygon(venue.geometry)) {
       draw.add(venue.geometry);
       boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
-      map.fitBounds(boundingBox, { padding: { top: 50, bottom: 50, left: 50, right: 50 }, animate: false });
+      map.fitBounds(boundingBox, { padding: { top: 150, bottom: 150, left: 150, right: 150 }, animate: false });
     }
 
     map.on('draw.create', updateArea);
@@ -111,8 +111,10 @@
       venue.geometry = data.features[0].geometry as Polygon;
       boundingBox = bbox(venue.geometry) as LngLatBoundsLike;
 
-      venue.marker = center(data as AllGeoJSON).geometry.coordinates;
-      markerEl.setLngLat([venue.marker[0], venue.marker[1]]);
+      const centerPoint = center(data as AllGeoJSON).geometry.coordinates;
+      markerEl.setLngLat([centerPoint[0], centerPoint[1]]);
+
+      venue.marker = [centerPoint[0], centerPoint[1]];
       venue = venue;
 
       if (draw.getMode() === 'draw_polygon') {
@@ -127,6 +129,21 @@
       }
     }
   }
+
+  async function deleteVenue(venue: Venue) {
+    const confirm = window.confirm(`Are you sure you want to delete venue ${venue.name}?`);
+
+    if (!confirm) {
+      return;
+    }
+
+    const response = await fetch(`/api/${routes.VENUES}/${venue.id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      return window.alert(`Error deleting place: ${await response.text()}`);
+    }
+
+    goto(`/`);
+  }
 </script>
 
 <svelte:head>
@@ -136,8 +153,8 @@
 <div class="flex flex-row flex-1">
   <div class="flex flex-col w-96 px-8 py-6">
     <h2 class="flex items-center my-4">
-      <span class="material-icons text-[32px] relative top-[0px] text-[#4264fb] mr-2">business</span>
-      Venue
+      <span class="material-icons text-[32px] relative top-[0px] text-[#4264fb] mr-2">business</span>Venue
+      <button class="material-icons text-[16px] relative top-[5px] text-gray-300 ml-auto" on:click={() => deleteVenue(venue)}>delete</button>
     </h2>
 
     <form on:submit|preventDefault={createVenue} class="flex flex-col" autocomplete="off">

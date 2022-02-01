@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Venue } from '$lib/types';
-  // import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
 
-  // const dispatch = createEventDispatcher<{ venueSelect: Venue; delete: Venue }>();
+  const dispatch = createEventDispatcher<{ venueSelect: Venue; delete: Venue }>();
 
   export let venues: Venue[] = [];
   export let selectedVenueId: string | undefined;
@@ -13,6 +13,10 @@
   function updateSelectedVenueId(event: MouseEvent & { currentTarget: EventTarget & HTMLTableRowElement }, venueId: string) {
     if (event.target === event.currentTarget || [...event.currentTarget.children].some(c => c === event.target)) {
       selectedVenueId = venueId;
+      dispatch(
+        'venueSelect',
+        venues.find(v => v.id === selectedVenueId),
+      );
     }
   }
 </script>
@@ -47,8 +51,6 @@
     </table>
   </div>
 {/if}
-
-<a class="btn btn-primary inline-block mb-6" href="/venues/new">add venue</a>
 
 <style lang="postcss">
   .active {

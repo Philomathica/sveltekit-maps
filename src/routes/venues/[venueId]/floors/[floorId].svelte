@@ -42,6 +42,7 @@
   import type { Map as MapboxMap } from 'mapbox-gl';
   import type { Floor, MapboxJobStatus, Venue } from '$lib/types';
   import type { LngLatBoundsLike } from 'mapbox-gl';
+  import { routes } from '$lib/enum-types';
 
   export let venue: Venue;
   export let floor: Floor;
@@ -249,9 +250,21 @@
       <p class="mt-2 text-red-500">error processing image: {error}</p>
     {/if}
 
-    <button disabled={!uploadedImage && !floor.previewImage} on:click={onConvertToGeotiffSelected} type="button" class="btn btn-primary w-full mt-8">
-      save
-    </button>
+    <div class="flex">
+      <button
+        type="button"
+        class="basis-1/3 btn btn-primary-outline w-full mt-8 text-gray-400 mr-4"
+        on:click={() => goto(`/${routes.VENUES}/${venue.id}/${routes.FLOORS}`)}>Cancel</button
+      >
+      <button
+        type="button"
+        class="btn btn-primary w-full mt-8"
+        disabled={!uploadedImage && !floor.previewImage}
+        on:click={onConvertToGeotiffSelected}
+      >
+        save
+      </button>
+    </div>
   </div>
 
   <div class="flex-1">
