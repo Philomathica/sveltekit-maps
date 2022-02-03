@@ -1,9 +1,9 @@
 import clientPromise from '$lib/db/mongo';
-import type { Locals, Typify, Place } from '$lib/types';
+import type { Typify, Place } from '$lib/types';
 import type { RequestHandler } from '@sveltejs/kit';
 
 // get place
-export const get: RequestHandler<Locals, any, Typify<Place>> = async ({ params }) => {
+export const get: RequestHandler<Typify<Place>> = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Place>('places');
   const place = await collection.findOne<Place>({ id: params.placeId }, { projection: { _id: 0 } });
@@ -18,8 +18,8 @@ export const get: RequestHandler<Locals, any, Typify<Place>> = async ({ params }
 };
 
 // put place
-export const put: RequestHandler<Locals, Place, Typify<Place>> = async ({ params, body }) => {
-  const place = body as Place;
+export const put: RequestHandler<Typify<Place>> = async ({ params, request }) => {
+  const place: Place = await request.json();
   const client = await clientPromise;
   const collection = client.db().collection<Place>('places');
 
@@ -33,7 +33,7 @@ export const put: RequestHandler<Locals, Place, Typify<Place>> = async ({ params
 };
 
 // delete place
-export const del: RequestHandler<Locals> = async ({ params }) => {
+export const del: RequestHandler = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Place>('places');
   const place = await collection.findOne<Place>({ id: params.placeId }, { projection: { _id: 0 } });

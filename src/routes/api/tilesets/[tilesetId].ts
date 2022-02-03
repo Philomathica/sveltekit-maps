@@ -2,15 +2,15 @@ import { mapbox } from '$lib/variables';
 import type { RequestHandler } from '@sveltejs/kit';
 import { customAlphabet } from 'nanoid';
 import nanoidDictionary from 'nanoid-dictionary';
-import type { Locals, MapboxJobStatus, Typify } from '$lib/types';
+import type { MapboxJobStatus, Typify } from '$lib/types';
 
 /**
  * Convert client uploaded s3 image to mapbox tileset.
  */
-export const post: RequestHandler<Locals, { fileUrl: string; name: string }, Typify<MapboxJobStatus>> = async ({ params, body }) => {
+export const post: RequestHandler<Typify<MapboxJobStatus>> = async ({ params, request }) => {
   const nanoid = customAlphabet(nanoidDictionary.alphanumeric, 6);
   const tileset = `${mapbox.username}.${nanoid()}`;
-  const { fileUrl, name } = body;
+  const { fileUrl, name }: { fileUrl: string; name: string } = await request.json();
   const url = `${mapbox.baseUploadUrl}?access_token=${mapbox.uploadToken}`;
   const payload = JSON.stringify({ url: fileUrl, tileset, name });
   const response = await fetch(url, {

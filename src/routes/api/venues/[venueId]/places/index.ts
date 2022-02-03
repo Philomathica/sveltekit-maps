@@ -1,10 +1,10 @@
 import clientPromise from '$lib/db/mongo';
-import type { Place, Locals, Typify } from '$lib/types';
+import type { Place, Typify } from '$lib/types';
 import type { RequestHandler } from '@sveltejs/kit';
 import { nanoid } from 'nanoid';
 
 // list Places of Venue
-export const get: RequestHandler<Locals, any, Typify<Place[]>> = async ({ params }) => {
+export const get: RequestHandler<Typify<Place[]>> = async ({ params }) => {
   const client = await clientPromise;
   const placeCollection = client.db().collection<Place>('places');
   const places = await placeCollection.find<Place>({ venueId: params.venueId }, { projection: { _id: 0 } }).toArray();
@@ -15,8 +15,8 @@ export const get: RequestHandler<Locals, any, Typify<Place[]>> = async ({ params
 };
 
 // create place
-export const post: RequestHandler<Locals, Place, Typify<Place>> = async ({ params, body }) => {
-  const place = body as Place;
+export const post: RequestHandler<Typify<Place>> = async ({ params, request }) => {
+  const place: Place = await request.json();
   const client = await clientPromise;
   const collection = client.db().collection<Place>('places');
 

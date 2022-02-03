@@ -26,7 +26,7 @@
 
   export let venues: Venue[];
 
-  $: selectedVenue = venues.find(v => v.id === selectedVenueId);
+  // $: selectedVenue = venues.find(v => v.id === selectedVenueId);
 
   let selectedVenueId = '';
   let mapInstance: MapboxMap;

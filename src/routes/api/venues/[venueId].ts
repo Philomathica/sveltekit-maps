@@ -1,11 +1,11 @@
 import clientPromise from '$lib/db/mongo';
-import type { Floor, Locals, Typify, Venue } from '$lib/types';
+import type { Floor, Typify, Venue } from '$lib/types';
 import { mapbox } from '$lib/variables';
 import type { RequestHandler } from '@sveltejs/kit';
 import type { Document } from 'mongodb';
 
 // get venue
-export const get: RequestHandler<Locals, any, Typify<Venue>> = async ({ params, url }) => {
+export const get: RequestHandler<Typify<Venue>> = async ({ params, url }) => {
   const withImage = url.searchParams.get('withImage');
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
@@ -22,8 +22,8 @@ export const get: RequestHandler<Locals, any, Typify<Venue>> = async ({ params, 
 };
 
 // put venue
-export const put: RequestHandler<Locals, Venue, Typify<Venue>> = async ({ params, body }) => {
-  const venue = body as Venue;
+export const put: RequestHandler<Typify<Venue>> = async ({ params, request }) => {
+  const venue: Venue = await request.json();
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
 
@@ -37,7 +37,7 @@ export const put: RequestHandler<Locals, Venue, Typify<Venue>> = async ({ params
 };
 
 // delete venue
-export const del: RequestHandler<Locals> = async ({ params }) => {
+export const del: RequestHandler = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
   const venue = await collection.findOne<Venue>({ id: params.venueId }, { projection: { _id: 0 } });

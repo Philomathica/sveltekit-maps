@@ -7,8 +7,6 @@ import type { Polygon, Point } from 'geojson';
 
 export type Typify<T> = { [K in keyof T]: Typify<T[K]> };
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface Locals {}
 export interface ReferencePoint {
   x: number;
   y: number;

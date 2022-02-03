@@ -1,10 +1,10 @@
 import clientPromise from '$lib/db/mongo';
-import type { Locals, Typify, Floor } from '$lib/types';
+import type { Typify, Floor } from '$lib/types';
 import { mapbox } from '$lib/variables';
 import type { RequestHandler } from '@sveltejs/kit';
 
 // get floor
-export const get: RequestHandler<Locals, any, Typify<Floor>> = async ({ params }) => {
+export const get: RequestHandler<Typify<Floor>> = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Floor>('floors');
   const floor = await collection.findOne<Floor>({ id: params.floorId }, { projection: { _id: 0 } });
@@ -19,8 +19,8 @@ export const get: RequestHandler<Locals, any, Typify<Floor>> = async ({ params }
 };
 
 // put floor
-export const put: RequestHandler<Locals, Floor, Typify<Floor>> = async ({ params, body }) => {
-  const floor = body as Floor;
+export const put: RequestHandler<Typify<Floor>> = async ({ params, request }) => {
+  const floor: Floor = await request.json();
   const client = await clientPromise;
   const collection = client.db().collection<Floor>('floors');
 
@@ -34,7 +34,7 @@ export const put: RequestHandler<Locals, Floor, Typify<Floor>> = async ({ params
 };
 
 // delete floor
-export const del: RequestHandler<Locals> = async ({ params }) => {
+export const del: RequestHandler = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Floor>('floors');
   const floor = await collection.findOne<Floor>({ id: params.floorId }, { projection: { _id: 0 } });
