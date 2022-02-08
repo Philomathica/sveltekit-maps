@@ -15,7 +15,7 @@
 
   async function getJobStatus(jobId: string) {
     jobResults[jobId] = 'Loading job status';
-    const response = await fetch(`/api/tilesets/jobs/${jobId}`);
+    const response = await fetch(`/tilesets/jobs/${jobId}`);
     const result: MapboxJobStatus = await response.json();
     jobResults[jobId] = result.error ? `error: ${result.error}` : result.progress === 0 ? 'Job in progress' : 'Job finished';
   }

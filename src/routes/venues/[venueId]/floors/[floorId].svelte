@@ -1,47 +1,13 @@
-<script context="module" lang="ts">
-  import { emptyFloor } from './_empty-floor';
-  import type { Load } from '@sveltejs/kit';
-
-  export const load: Load = async ({ params, fetch }) => {
-    const venueResponse = await fetch(`/api/venues/${params.venueId}`);
-    const venue = await venueResponse.json();
-
-    if (!venue) {
-      return { status: 404 };
-    }
-
-    if (params.floorId === 'new') {
-      const venueBbox = bbox(venue.geometry) as [number, number, number, number];
-      const sw = [venueBbox[0], venueBbox[1]];
-      const ne = [venueBbox[2], venueBbox[3]];
-      const newFloor = {
-        ...emptyFloor,
-        georeference: setGeoRefLocData(sw, ne, emptyFloor.georeference),
-      };
-      return { props: { venue, floor: newFloor } };
-    }
-
-    const floorResponse = await fetch(`/api/venues/${params.venueId}/floors/${params.floorId}?withImage=true`);
-    const floor = await floorResponse.json();
-
-    if (!floor) {
-      return { status: 404 };
-    }
-
-    return { props: { venue, floor } };
-  };
-</script>
-
 <script lang="ts">
-  import Map from '$lib/components/maps/Map.svelte';
+  import type { Map as MapboxMap } from 'mapbox-gl';
+  import type { LngLatBoundsLike } from 'mapbox-gl';
   import bbox from '@turf/bbox';
+
+  import type { Floor, MapboxJobStatus, Venue } from '$lib/types';
+  import Map from '$lib/components/maps/Map.svelte';
+  import { goto } from '$app/navigation';
   import { setGeoRefLocData, getPositionInfo, setGeoRefDimensionData } from '$lib/helpers/georeference';
   import { convertFileToImage, convertImageToGeoTiff, sourceCoordinatesToGcpArr } from '$lib/helpers/gdal';
-
-  import { goto } from '$app/navigation';
-  import type { Map as MapboxMap } from 'mapbox-gl';
-  import type { Floor, MapboxJobStatus, Venue } from '$lib/types';
-  import type { LngLatBoundsLike } from 'mapbox-gl';
   import { routes } from '$lib/enum-types';
 
   export let venue: Venue;
@@ -129,7 +95,7 @@
     loadingMessage = 'getting signed url...';
 
     // S3 url
-    const mapsResponse = await fetch('/api/tilesets/s3');
+    const mapsResponse = await fetch('/tilesets/s3');
 
     if (!mapsResponse.ok) {
       error = 'Failed to get signed url';
@@ -144,7 +110,7 @@
     await fetch(signedUrl, { body: geotiffFile, method: 'PUT' });
 
     loadingMessage = 'converting geotiff to tileset...';
-    const convertResponse = await fetch(`/api/tilesets/${floor.tilesetId}`, {
+    const convertResponse = await fetch(`/tilesets/${floor.tilesetId}`, {
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
       body: JSON.stringify({ fileUrl, name: geotiffFile.name }),
@@ -177,13 +143,13 @@
     };
 
     if (floor.id === 'new') {
-      await fetch(`/api/venues/${venue.id}/floors`, {
+      await fetch(`/venues/${venue.id}/floors`, {
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
         body: JSON.stringify(floor),
       });
     } else {
-      await fetch(`/api/venues/${venue.id}/floors/${floor.id}`, {
+      await fetch(`/venues/${venue.id}/floors/${floor.id}`, {
         headers: { 'Content-Type': 'application/json' },
         method: 'PUT',
         body: JSON.stringify(floor),
@@ -209,7 +175,7 @@
       return;
     }
 
-    const response = await fetch(`/api/venues/${floor.venueId}/floors/${floor.id}`, { method: 'DELETE' });
+    const response = await fetch(`/venues/${floor.venueId}/floors/${floor.id}`, { method: 'DELETE' });
     if (!response.ok) {
       return window.alert(`Error deleting floor: ${await response.text()}`);
     }

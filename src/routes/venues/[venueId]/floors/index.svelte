@@ -1,29 +1,11 @@
-<script context="module" lang="ts">
-  import type { Load } from '@sveltejs/kit';
-
-  export const load: Load = async ({ params, fetch }) => {
-    const responses = await Promise.all([fetch(`/api/venues/${params.venueId}`), fetch(`/api/venues/${params.venueId}/floors`)]);
-
-    responses.map(response => {
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${response.url}`);
-      }
-    });
-
-    const venue: Venue = await responses[0].json();
-    const floors: FloorLevel[] = await responses[1].json();
-    const sortedFloors = floors.sort((a, b) => a.number - b.number);
-    return { props: { venue, floors: sortedFloors } };
-  };
-</script>
-
 <script lang="ts">
+  import type { LngLatBoundsLike, Map as MapboxMap } from 'mapbox-gl';
+  import bbox from '@turf/bbox';
+
   import type { Floor as FloorLevel, Venue } from '$lib/types';
   import Floors from '$lib/components/floors/Floors.svelte';
   import Map from '$lib/components/maps/Map.svelte';
-  import type { LngLatBoundsLike, Map as MapboxMap } from 'mapbox-gl';
   import FloorControl from '$lib/components/floors/FloorControl.svelte';
-  import bbox from '@turf/bbox';
   import { routes } from '$lib/enum-types';
 
   export let floors: FloorLevel[];
