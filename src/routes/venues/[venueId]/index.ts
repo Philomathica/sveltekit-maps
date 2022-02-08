@@ -1,27 +1,35 @@
+import type { RequestHandler } from '@sveltejs/kit';
+
 import clientPromise from '$lib/db/mongo';
 import type { Floor, Typify, Venue } from '$lib/types';
 import { mapbox } from '$lib/variables';
-import type { RequestHandler } from '@sveltejs/kit';
-import type { Document } from 'mongodb';
 
-// get venue
-export const get: RequestHandler<Typify<Venue>> = async ({ params, url }) => {
-  const withImage = url.searchParams.get('withImage');
+const emptyVenue: Venue = {
+  id: 'new',
+  name: '',
+  zoomLevel: 17,
+  marker: [2.3283084, 48.8776899],
+  geometry: { coordinates: [[[0, 0]]], type: 'Polygon' },
+};
+
+export const get: RequestHandler<{ venue: Typify<Venue> }> = async ({ params }) => {
+  if (params.venueId === 'new') {
+    return { body: { venue: emptyVenue } };
+  }
+
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
-  const projection: Document | undefined = withImage ? { _id: 0 } : { _id: 0 };
-  const venue = await collection.findOne<Venue>({ id: params.venueId }, { projection });
+  const venue = await collection.findOne<Venue>({ id: params.venueId }, { projection: { _id: 0 } });
 
   if (!venue) {
     return { status: 404 };
   }
 
   return {
-    body: venue,
+    body: { venue },
   };
 };
 
-// put venue
 export const put: RequestHandler<Typify<Venue>> = async ({ params, request }) => {
   const venue: Venue = await request.json();
   const client = await clientPromise;
@@ -32,16 +40,15 @@ export const put: RequestHandler<Typify<Venue>> = async ({ params, request }) =>
   await collection.replaceOne({ id: venue.id }, updatedVenue);
 
   return {
-    body: { ...updatedVenue },
+    body: updatedVenue,
   };
 };
 
-// delete venue
 export const del: RequestHandler = async ({ params }) => {
   const client = await clientPromise;
   const collection = client.db().collection<Venue>('venues');
   const venue = await collection.findOne<Venue>({ id: params.venueId }, { projection: { _id: 0 } });
-  const floors = await collection.find<Floor>({ id: params.floorId }, { projection: { _id: 0 } }).toArray();
+  const floors = await collection.find<Floor>({ id: params.floorId }, { projection: { _id: 0, previewImage: 0 } }).toArray();
 
   if (!venue) {
     return { status: 404 };

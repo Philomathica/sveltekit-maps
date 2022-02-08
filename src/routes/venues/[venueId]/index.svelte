@@ -1,37 +1,13 @@
-<script context="module" lang="ts">
-  import type { Venue } from '$lib/types';
-  import type { Load } from '@sveltejs/kit';
-  import type { Polygon } from 'geojson';
-  import { emptyVenue } from './_empty-venue';
-
-  export const load: Load = async ({ params, fetch }) => {
-    const venueId = params.venueId;
-
-    if (params.venueId === 'new') {
-      return { props: { venue: emptyVenue } };
-    }
-
-    const response = await fetch(`/api/venues/${venueId}`);
-    const venue: Venue = await response.json();
-
-    if (!venue) {
-      return {
-        status: 404,
-      };
-    }
-
-    return { props: { venue } };
-  };
-</script>
-
 <script lang="ts">
+  import type { Polygon } from 'geojson';
   import type { Map as MapboxMap, LngLatBoundsLike, Marker } from 'mapbox-gl';
+  import type { AllGeoJSON } from '@turf/helpers';
   import MapboxDraw from '@mapbox/mapbox-gl-draw';
-  import Map from '$lib/components/maps/Map.svelte';
   import center from '@turf/center';
   import bbox from '@turf/bbox';
 
-  import type { AllGeoJSON } from '@turf/helpers';
+  import type { Venue } from '$lib/types';
+  import Map from '$lib/components/maps/Map.svelte';
   import { getMapbox } from '$lib/components/maps/mapbox';
   import { goto } from '$app/navigation';
   import { isPolygon } from 'geojson-validation';
@@ -45,13 +21,13 @@
   let markerEl: Marker;
   let boundingBox: LngLatBoundsLike;
 
-  async function createVenue() {
+  async function saveVenue() {
     isSubmitting = true;
 
     const response =
       venue.id === 'new'
-        ? await fetch('/api/venues', { headers: { 'Content-Type': 'application/json' }, method: 'POST', body: JSON.stringify(venue) })
-        : await fetch(`/api/venues/${venue.id}`, { headers: { 'Content-Type': 'application/json' }, method: 'PUT', body: JSON.stringify(venue) });
+        ? await fetch('/venues', { headers: { 'Content-Type': 'application/json' }, method: 'POST', body: JSON.stringify(venue) })
+        : await fetch(`/venues/${venue.id}`, { headers: { 'Content-Type': 'application/json' }, method: 'PUT', body: JSON.stringify(venue) });
 
     if (!response.ok) {
       console.error(response);
@@ -137,7 +113,7 @@
       return;
     }
 
-    const response = await fetch(`/api/${routes.VENUES}/${venue.id}`, { method: 'DELETE' });
+    const response = await fetch(`/${routes.VENUES}/${venue.id}`, { method: 'DELETE' });
     if (!response.ok) {
       return window.alert(`Error deleting place: ${await response.text()}`);
     }
@@ -157,7 +133,7 @@
       <button class="material-icons text-[16px] relative top-[5px] text-gray-300 ml-auto" on:click={() => deleteVenue(venue)}>delete</button>
     </h2>
 
-    <form on:submit|preventDefault={createVenue} class="flex flex-col" autocomplete="off">
+    <form on:submit|preventDefault={saveVenue} class="flex flex-col" autocomplete="off">
       <label class="block mb-4 text-xs font-light text-gray-400 uppercase">
         Venue Name
         <input class="w-full" required type="text" name="name" bind:value={venue.name} placeholder="name" />

@@ -1,10 +1,8 @@
-<script context="module" lang="ts">
+<script lang="ts">
   import Nav from '$lib/components/layout/Nav.svelte';
   import { routes } from '$lib/enum-types';
   import { page } from '$app/stores';
-</script>
 
-<script lang="ts">
   export let activeMenu: routes;
 
   $: setActiveMenu($page.url.pathname);

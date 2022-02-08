@@ -1,46 +1,15 @@
-<script context="module" lang="ts">
-  import type { Load } from '@sveltejs/kit';
-  import type { Floor } from '$lib/types';
-  import type { Polygon, Point } from 'geojson';
-
-  export const load: Load = async ({ params, fetch }) => {
-    const [venueResponse, floorResponse] = await Promise.all([
-      fetch(`/api/venues/${params.venueId}`),
-      fetch(`/api/venues/${params.venueId}/floors?withImage=true`),
-    ]);
-    const [venue, floors] = await Promise.all([venueResponse.json(), floorResponse.json() as Promise<Floor[]>]);
-
-    if (!venue || !floors) {
-      return { status: 404 };
-    }
-
-    if (params.placeId === 'new') {
-      return { props: { venue, floors, place: { ...emptyPlace } } };
-    }
-
-    const placeResponse = await fetch(`/api/venues/${params.venueId}/places/${params.placeId}`);
-    const place: Venue = await placeResponse.json();
-
-    if (!place) {
-      return { status: 404 };
-    }
-
-    return { props: { venue, floors, place } };
-  };
-</script>
-
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import type { Point, Polygon } from 'geojson';
   import type { LngLatBoundsLike, Map as MapboxMap } from 'mapbox-gl';
   import MapboxDraw from '@mapbox/mapbox-gl-draw';
   import bbox from '@turf/bbox';
-  import type { Place, Venue } from '$lib/types';
   import { isPolygon, isPoint } from 'geojson-validation';
-  // import { getMapbox } from '$lib/components/maps/mapbox';
-  import { emptyPlace } from './_empty-place';
-  import { routes } from '$lib/enum-types';
+
+  import type { Floor, Place, Venue } from '$lib/types';
   import Map from '$lib/components/maps/Map.svelte';
   import FloorControl from '$lib/components/floors/FloorControl.svelte';
+  import { goto } from '$app/navigation';
+  import { routes } from '$lib/enum-types';
 
   export let venue: Venue;
   export let floors: Floor[];
@@ -136,13 +105,13 @@
     place = { ...place, floorId: selectedFloorId, venueId: venue.id };
 
     if (place.id === 'new') {
-      await fetch(`/api/${routes.VENUES}/${venue.id}/${routes.PLACES}`, {
+      await fetch(`/${routes.VENUES}/${venue.id}/${routes.PLACES}`, {
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
         body: JSON.stringify(place),
       });
     } else {
-      await fetch(`/api/${routes.VENUES}/${venue.id}/${routes.PLACES}/${place.id}`, {
+      await fetch(`/${routes.VENUES}/${venue.id}/${routes.PLACES}/${place.id}`, {
         headers: { 'Content-Type': 'application/json' },
         method: 'PUT',
         body: JSON.stringify(place),
@@ -159,7 +128,7 @@
       return;
     }
 
-    const response = await fetch(`/api/${routes.PLACES}/${venue.id}/places/${place.id}`, { method: 'DELETE' });
+    const response = await fetch(`/${routes.PLACES}/${venue.id}/places/${place.id}`, { method: 'DELETE' });
     if (!response.ok) {
       return window.alert(`Error deleting place: ${await response.text()}`);
     }
